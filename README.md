@@ -302,4 +302,4 @@ AURA-DS demonstrates practical, hands-on engineering ability across multiple dis
 
 GitHub: [https://github.com/noohkhan7232](https://github.com/noohkhan7232)
 
-Repository: [https://github.com/noohkhan7232/Autonomous-Unified-Reasoning-Analytics-Data-Science-Agent](https://github.com/noohkhan7232/Autonomous-Unified-Reasoning-Analytics-Data-Science-Agent)
+Repository: [https://github.com/noohkhan7232/Autonomous-Unified-Reasoning-Analytics-Data-Science-Agent]
