@@ -238,11 +238,13 @@ def execute(run, config):
     target = config["target"]
     report = ""
 
-    def stage(name, action):
+    def stage(name, action, result_key=None):
         with database() as db:
             event(db, run, name, "running")
         try:
             value = action()
+            if result_key:
+                results[result_key] = value
         except Exception:
             with database() as db:
                 event(db, run, name, "failed", f"{name} failed. See server logs for details.")
@@ -260,8 +262,8 @@ def execute(run, config):
 
         with database() as db:
             db.execute("UPDATE runs SET status='running' WHERE id=?", (run,))
-        results["plan"] = stage("Planning", lambda: PlannerAgent().run(path, target, "classification"))
-        results["eda"] = stage("Exploratory data analysis", lambda: EDAAgent().run(path, target, str(folder)))["eda_summary"]
+        stage("Planning", lambda: PlannerAgent().run(path, target, "classification"), "plan")
+        stage("Exploratory data analysis", lambda: EDAAgent().run(path, target, str(folder))["eda_summary"], "eda")
 
         def benchmark(impute=False):
             agent = ModelingAgent()
@@ -274,13 +276,13 @@ def execute(run, config):
         has_missing = any(count for name, count in results["eda"]["missing_values"].items() if name != target)
         corrected = False
         try:
-            results["modeling"] = stage("Modeling", benchmark)
+            stage("Modeling", benchmark, "modeling")
         except ValueError:
             if not has_missing:
                 raise
             with database() as db:
                 event(db, run, "Self-correction", "retrying", "Fit preprocessing with training-set imputation.")
-            results["modeling"] = stage("Self-correction", lambda: benchmark(impute=True))
+            stage("Self-correction", lambda: benchmark(impute=True), "modeling")
             corrected = True
 
         def evaluate():
@@ -289,14 +291,14 @@ def execute(run, config):
                 task_type="classification", target_column=target,
             ))
 
-        results["evaluation"] = stage("Evaluation", evaluate)
+        stage("Evaluation", evaluate, "evaluation")
         stage("Decision routing", lambda: results["evaluation"]["verdict"])
         if not corrected and results["evaluation"]["requires_retraining"] and has_missing:
             results["first_evaluation"] = results["evaluation"]
             with database() as db:
                 event(db, run, "Self-correction", "retrying", "Fit preprocessing with training-set imputation.")
-            results["modeling"] = stage("Self-correction", lambda: benchmark(impute=True))
-            results["evaluation"] = stage("Evaluation", evaluate)
+            stage("Self-correction", lambda: benchmark(impute=True), "modeling")
+            stage("Evaluation", evaluate, "evaluation")
         elif not corrected:
             with database() as db:
                 event(db, run, "Self-correction", "skipped", "No missing-data correction was triggered.")
@@ -315,12 +317,22 @@ def execute(run, config):
             explanation = "AI explanation unavailable. The measured results are recorded below."
             results["explanation_status"] = "unavailable"
         evaluation = results["evaluation"]
+        metrics = results["modeling"]["model_metrics"]
+        dataset = results["plan"]["dataset_summary"]
+        findings = "\n".join(f"- {issue}" for issue in evaluation["issues"]) or "No issues flagged by the evaluator."
+        recommendations = "\n".join(f"- {item}" for item in evaluation["recommendations"]) or "No automatic recommendations."
         report = stage("Final report", lambda: (
-            f'# Analysis report\n\nTarget: {target}\n\n'
-            f'Best model: {results["modeling"]["best_model"]}\n\n'
-            f'Verdict: {evaluation["verdict"]} · System score: {evaluation["system_score"]:.3f}\n\n'
-            + "\n".join(evaluation["issues"] + evaluation["recommendations"])
-            + f"\n\n## Analytical explanation\n\n{explanation}"
+            f'# Executive summary\n\nClassification of {target}. Verdict: {evaluation["verdict"]}. '
+            f'System score: {evaluation["system_score"]:.3f}.\n\n'
+            f'## Dataset analysis\n\n{dataset["num_rows"]:,} rows and {dataset["num_columns"]:,} columns. '
+            f'Held-out test split: {config["test_size"]:.0%}.\n\n'
+            f'## Data quality findings\n\n{findings}\n\n'
+            f'## Model performance\n\nBest model: {results["modeling"]["best_model"]}. '
+            f'Accuracy: {metrics["accuracy"]:.1%}. Weighted F1: {metrics["f1"]:.1%}.\n\n'
+            f'## Evaluation\n\nData quality: {evaluation["data_quality_score"]:.3f}. '
+            f'Model quality: {evaluation["model_quality_score"]:.3f}. Pass threshold: 0.70.\n\n'
+            f'## Knowledge-grounded explanation\n\n{explanation}\n\n'
+            f'## Recommendations\n\n{recommendations}'
         ))
         status = "completed"
     except Exception:
