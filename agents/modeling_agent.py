@@ -6,6 +6,7 @@ import joblib
 import pandas as pd
 
 from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
@@ -40,6 +41,10 @@ class ModelingAgent:
         dataset_path: str,
         target_column: str,
         task_type: str,
+        *,
+        test_size: float = 0.2,
+        model_dir: str = "artifacts/models",
+        impute: bool = False,
     ) -> Dict[str, Any]:
 
         # ============================================================
@@ -58,7 +63,7 @@ class ModelingAgent:
         X_train, X_test, y_train, y_test = train_test_split(
             X,
             y,
-            test_size=0.2,
+            test_size=test_size,
             random_state=self.random_state,
             stratify=y if task_type == "classification" else None,
         )
@@ -68,27 +73,32 @@ class ModelingAgent:
         # ============================================================
 
         categorical_cols = X.select_dtypes(
-            include=["object"]
+            exclude=["number"]
         ).columns
 
         numeric_cols = X.select_dtypes(
-            exclude=["object"]
+            include=["number"]
         ).columns
 
         # ============================================================
         # 4. PREPROCESSING
         # ============================================================
 
+        encoder = OneHotEncoder(handle_unknown="ignore")
+        scaler = StandardScaler()
+        if impute:
+            encoder = Pipeline([("fill", SimpleImputer(strategy="most_frequent")), ("encode", encoder)])
+            scaler = Pipeline([("fill", SimpleImputer(strategy="median")), ("scale", scaler)])
         preprocessor = ColumnTransformer(
             transformers=[
                 (
                     "cat",
-                    OneHotEncoder(handle_unknown="ignore"),
+                    encoder,
                     categorical_cols,
                 ),
                 (
                     "num",
-                    StandardScaler(),
+                    scaler,
                     numeric_cols,
                 ),
             ]
@@ -278,7 +288,6 @@ class ModelingAgent:
         # 8. SAVE BEST MODEL
         # ============================================================
 
-        model_dir = "artifacts/models"
 
         os.makedirs(
             model_dir,

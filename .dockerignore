@@ -1,0 +1,8 @@
+.git
+.env
+**/__pycache__
+**/node_modules
+**/.next
+output
+knowledge/vector_store
+Autonomous-Unified-Reasoning-Analytics-Data-Science-Agent

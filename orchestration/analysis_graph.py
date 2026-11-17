@@ -61,6 +61,7 @@ def modeling_node(state: dict) -> dict:
         dataset_path=state["dataset_path"],
         target_column=state["target_column"],
         task_type=state["task_type"],
+        impute=state.get("impute_missing", False),
     )
 
     return {
@@ -70,7 +71,7 @@ def modeling_node(state: dict) -> dict:
         "model_artifact_path": result["model_artifact_path"],
 
         "model_comparison": result["model_comparison"],
-"best_model": result["best_model"],
+        "best_model": result["best_model"],
 
 
 
@@ -122,6 +123,7 @@ def self_correction_node(state: dict) -> dict:
     return {
         **state,
         "retry_count": retry_count,
+        "impute_missing": True,
         "self_correction_triggered": True,
         "correction_reason": reason,
         "decision": "RETRY",
@@ -162,7 +164,8 @@ def decision_router(state: dict) -> str:
     # FAIL + RETRY AVAILABLE
     # --------------------------------------------------------
 
-    if retry_count < max_retries:
+    missing = state.get("eda_summary", {}).get("missing_values", {})
+    if retry_count < max_retries and not state.get("impute_missing") and any(missing.values()):
         return "self_correction"
 
     # --------------------------------------------------------

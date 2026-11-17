@@ -6,7 +6,7 @@ class PlannerAgent:
     Decides what kind of data science task this is and produce a structured analysis plan.
 
     """
-    def run(self, dataset_path:str)-> Dict:
+    def run(self, dataset_path:str, target_column=None, task_type=None)-> Dict:
         df=pd.read_csv(dataset_path)
         summary={
             "num_rows": df.shape[0],
@@ -15,11 +15,9 @@ class PlannerAgent:
             "dtypes": df.dtypes.apply(lambda x: x.name).to_dict(),
             "missing_values": df.isnull().sum().to_dict()
         }
-        target_column=df.columns[-1]
-        if df[target_column].nunique()<=10:
-            task_type="classification"
-        else:
-            task_type="regression"
+        target_column = target_column if target_column is not None else df.columns[-1]
+        if task_type is None:
+            task_type = "classification" if df[target_column].nunique() <= 10 else "regression"
         plan = {
             "task_type": task_type,
             "target_column": target_column,

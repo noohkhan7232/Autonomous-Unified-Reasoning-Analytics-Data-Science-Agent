@@ -1,0 +1,18 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      AURA_GEMINI_MODEL: ${AURA_GEMINI_MODEL:-gemini-2.5-flash}
+    volumes:
+      - workspace:/state
+  web:
+    build: ./frontend
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:3000:3000"
+volumes:
+  workspace:

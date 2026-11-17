@@ -1,4 +1,6 @@
 langchain
+fastapi>=0.115,<1
+uvicorn>=0.34,<1
 langchain-community
 langchain-google-genai
 chromadb

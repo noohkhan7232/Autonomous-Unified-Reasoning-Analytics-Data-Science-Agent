@@ -8,18 +8,18 @@ class EDAAgent:
     Performs exploratory data analysis 
     and store results in structured format."""
 
-    def run(self,dataset_path: str, target_column: str)-> Dict:
+    def run(self,dataset_path: str, target_column: str, plot_dir="artifacts/eda_plots")-> Dict:
         df=pd.read_csv(dataset_path)
 
         #--- basic Statistics---
-        numeric_summary= df.describe().to_dict()
+        numeric_summary = {name: series.describe().to_dict()
+                           for name, series in df.select_dtypes(include="number").items()}
         #--- Missing values------
         missing_values= df.isnull().sum().to_dict()
         #---- Target distribution ----
         target_distribution=df[target_column].value_counts().to_dict()
 
         #-----Plot directory-----
-        plot_dir="artifacts/eda_plots"
         os.makedirs(plot_dir, exist_ok=True)
 
         #-----Plot:target distribution----

@@ -1,68 +1,57 @@
-import pandas as pd
-from agents.planner import PlannerAgent
-from agents.eda import EDAAgent
-from state import AnalysisState
-from typing import Dict
-import matplotlib.pyplot as plt
-# planner = PlannerAgent()
-# state= AnalysisState(dataset_path="data/raw/adult.csv")
-# result = planner.run(state.dataset_path)
-# state.dataset_summary = result["dataset_summary"]
-# state.plan = result["plan"]
-# state.task_type = result["plan"]["task_type"]
-# state.target_column = result["plan"]["target_column"]
+import json
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
 
-# eda_agent = EDAAgent()
-# eda_result = eda_agent.run(dataset_path= state.dataset_path,
-#                            target_column= state.target_column)
-# print(eda_result)
-#print(result)
-# df=pd.read_csv("data/raw/adult.csv")
-# print(df.drop(columns=["income"]))
-# print(df["income"])
-# print(df.columns[-1])
-# print(df["income"].value_counts().to_dict())
-# plt.figure()
-# df["income"].value_counts().plot(kind='bar')
-# plt.show()
+from fastapi.testclient import TestClient
 
-# summary={
-#             "num_rows": df.shape[0],
-#             "num_columns": df.shape[1],
-#             "columns": df.columns.tolist(),
-#             "dtypes": df.dtypes.apply(lambda x: x.name).to_dict(),
-#             "missing_values": df.isnull().sum().to_dict()
-#         }
-#print(df.shape)
-#print(f"row: {df.shape[0]}")
-#print(f"columns: {df.shape[1]}")
-#print(df.columns[0])
-#print(df.dtypes.apply(lambda x: x.name).to_dict())
-#print(df.isnull().sum().to_dict())
-# target_column=df.columns[-1]
-# print(target_column)
-# print(df[target_column].nunique())
-        # if df[target_column].nunique()<=10:
-        #     task_type="classification"
-        # else:
-        #     task_type="regression"
-        # plan = {
-        #     "task_type": task_type,
-        #     "target_column": target_column,
-        #     "steps": ["Exploratory_data_analysis",
-        #               "feature_engineering",
-        #               "model_training", 
-        #               "evaluation"
-        #               ]
-        # }
-        # return {
-        #     "dataset_summary": summary,
-        #     "task_type": task_type,
-        #     "target_column": target_column,
-        #     "plan": plan
-        # }
-class Dog:
-    def bark(response):
-        return response
-print(Dog.bark("Bark"))   
-Dog()
+from backend import api
+
+
+class WorkspaceTest(unittest.TestCase):
+    def test_csv_analysis_stream_and_persistence(self):
+        csv = "amount,segment,label\n" + "".join(
+            f"{index + group * 100},{'a' if group == 0 else 'b'},{group}\n"
+            for group in range(2) for index in range(30)
+        )
+        with tempfile.TemporaryDirectory() as storage, patch.object(api, "ROOT", Path(storage)):
+            with patch.dict("os.environ", {"GOOGLE_API_KEY": ""}), TestClient(api.app) as client:
+                invalid = client.post("/api/datasets/upload", headers={"X-Filename": "wrong.txt"}, content=csv)
+                self.assertEqual(invalid.status_code, 422)
+                upload = client.post("/api/datasets/upload", headers={"X-Filename": "sample.csv"}, content=csv)
+                self.assertEqual(upload.status_code, 201, upload.text)
+                dataset = upload.json()
+                self.assertEqual(dataset["rows"], 60)
+                self.assertEqual([column["name"] for column in dataset["schema"]], ["amount", "segment", "label"])
+                base = f'/api/datasets/{dataset["id"]}'
+                self.assertEqual(client.get(base + "/profile").json()["duplicates"], 0)
+                self.assertEqual(client.get(base + "/preview?search=b&limit=2").json()["total"], 30)
+                payload = {"dataset_id": dataset["id"], "target": "missing"}
+                self.assertEqual(client.post("/api/analyses", json=payload).status_code, 422)
+                payload["target"] = "label"
+                created = client.post("/api/analyses", json=payload)
+                self.assertEqual(created.status_code, 202, created.text)
+                run_id = created.json()["id"]
+                run_url = f"/api/analyses/{run_id}"
+                response = client.get(run_url + "/events")
+                events = [json.loads(line[6:]) for line in response.text.splitlines() if line.startswith("data: ") and line != "data: {}"]
+                completed = {event["stage"] for event in events if event["status"] == "completed"}
+                self.assertTrue({"Planning", "Modeling", "Evaluation", "Final report", "Execution"} <= completed, events)
+                run = client.get(run_url).json()
+                self.assertEqual(run["status"], "completed")
+                self.assertEqual(len(run["results"]["modeling"]["model_comparison"]), 3)
+                self.assertEqual(run["results"]["evaluation"]["verdict"], "PASS")
+                self.assertEqual(run["results"]["explanation_status"], "unavailable")
+                self.assertIn("System score", client.get(run_url + "/report").text)
+                self.assertEqual(client.get(run_url + "/artifacts/target_distribution.png").status_code, 200)
+                self.assertEqual(client.get(run_url + "/artifacts/workspace.sqlite3").status_code, 404)
+            with TestClient(api.app) as reopened:
+                self.assertEqual(reopened.get(run_url).json()["id"], run_id)
+                self.assertEqual(reopened.delete(run_url).status_code, 204)
+                self.assertEqual(reopened.get(run_url).status_code, 404)
+
+
+if __name__ == "__main__":
+    unittest.main()
+

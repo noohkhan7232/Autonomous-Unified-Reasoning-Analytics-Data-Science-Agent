@@ -2,6 +2,7 @@ import os
 
 from typing import Dict
 import json
+from pathlib import PureWindowsPath
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 
@@ -62,6 +63,14 @@ class ExplanationAgent:
         retrieved_docs = self.retriever.retrieve(
             knowledge_query
         )
+        self.sources = [
+            {
+                "document": PureWindowsPath(str(doc.metadata.get("source", ""))).name,
+                "page": doc.metadata.get("page"),
+                "excerpt": doc.page_content,
+            }
+            for doc in retrieved_docs
+        ]
 
         knowledge_context = self._format_retrieved_knowledge(
             retrieved_docs
