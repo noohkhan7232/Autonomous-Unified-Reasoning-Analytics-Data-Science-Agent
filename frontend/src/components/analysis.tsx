@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Download, Play, Printer, Copy, Trash2 } from "lucide-react";
 import { ReactFlow, Background, type Node, type Edge } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -8,7 +8,7 @@ import { api, date, modelName, percent, type Dataset, type Profile, type Run, ty
 import { Bars, Empty, ErrorNote, Loading, Panel, Status, Table, useResource } from "./ui";
 import { Statistics } from "./datasets";
 
-const candidates = ["Logistic Regression", "Random Forest", "Gradient Boosting"];
+const candidates = ["logistic_regression", "random_forest", "gradient_boosting"];
 const stages = ["Planning","Exploratory data analysis","Modeling","Evaluation","Decision routing","Self-correction","Explanation","Final report"];
 
 export function Experiment({ datasets, initial, onStart, onUpload }: { datasets: Dataset[]; initial?: string; onStart: (id: string) => void; onUpload: () => void }) {
@@ -16,17 +16,18 @@ export function Experiment({ datasets, initial, onStart, onUpload }: { datasets:
   const [target, setTarget] = useState("");
   const [split, setSplit] = useState("20");
   const [seed, setSeed] = useState("42");
+  const [models, setModels] = useState(candidates);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const detail = useResource<Dataset>(dataset ? "datasets/" + dataset : null);
   if (!datasets.length) return <Panel title="Dataset required"><Empty title="Upload a dataset to begin" action={<button className="button primary" onClick={onUpload}>Dataset registry</button>}/></Panel>;
   return <form className="setup-grid" onSubmit={async event => {
     event.preventDefault();
-    if (pending) return;
+    if (pending || !models.length) return;
     setPending(true); setError("");
     try {
       const run = await api<{ id: string }>("analyses", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dataset_id: dataset, target, test_size: Number(split) / 100, random_state: Number(seed) }) });
+        body: JSON.stringify({ dataset_id: dataset, target, test_size: Number(split) / 100, random_state: Number(seed), models }) });
       onStart(run.id);
     } catch (cause) { setError((cause as Error).message); }
     finally { setPending(false); }
@@ -38,14 +39,15 @@ export function Experiment({ datasets, initial, onStart, onUpload }: { datasets:
         {detail?.error && <ErrorNote message={detail.error}/>}
         <div className="form-row"><label>Test split (%)<input type="number" min="10" max="50" step="1" required value={split} onChange={event => setSplit(event.target.value)}/></label>
         <label>Random state<input type="number" min="0" max="4294967295" step="1" required value={seed} onChange={event => setSeed(event.target.value)}/></label></div>
+        <fieldset className="model-choices"><legend>Benchmark candidates</legend>{candidates.map(model => <label key={model}><input type="checkbox" checked={models.includes(model)} onChange={() => setModels(items => items.includes(model) ? items.filter(item => item !== model) : [...items, model])}/>{modelName(model)}</label>)}</fieldset>
         {error && <ErrorNote message={error}/>}
       </div>
     </Panel>
     <Panel title="Execution summary" caption="Classification · evaluation threshold 0.70">
       <div className="form-fields"><dl className="facts"><dt>Dataset</dt><dd>{detail?.data?.name ?? "—"}</dd><dt>Target</dt><dd>{target || "—"}</dd><dt>Holdout</dt><dd>{split || "—"}%</dd><dt>Random state</dt><dd>{seed || "—"}</dd></dl>
-      <div className="candidate-list">{candidates.map(name => <span key={name}>{name}</span>)}</div>
+      <div className="candidate-list">{models.map(name => <span key={name}>{modelName(name)}</span>)}</div>
       <p className="muted">Plan → Explore → Benchmark → Evaluate → Explain → Report</p>
-      <button className="button primary" disabled={pending || !target} type="submit"><Play size={15}/>{pending ? "Queuing…" : "Run analysis"}</button></div>
+      <button className="button primary" disabled={pending || !target || !models.length} type="submit"><Play size={15}/>{pending ? "Queuing…" : "Run analysis"}</button></div>
     </Panel>
   </form>;
 }
@@ -58,6 +60,8 @@ export function Analysis({ id, view, setView, refresh, exit }: { id: string; vie
   const [action, setAction] = useState("");
   const [edaTab, setEdaTab] = useState("Overview");
   const [feature, setFeature] = useState("");
+  const [model, setModel] = useState("");
+  const modelDialog = useRef<HTMLDialogElement>(null);
   const resource = useResource<RunDetail>("analyses/" + id, revision);
   const assets = useResource<string[]>(view === "Reports" ? "analyses/" + id + "/artifacts" : null, revision);
   const profile = useResource<Profile>(view === "EDA Explorer" && resource?.data ? "datasets/" + resource.data.dataset_id + "/profile" : null);
@@ -86,8 +90,23 @@ export function Analysis({ id, view, setView, refresh, exit }: { id: string; vie
     data: { label: <div className="node-label"><strong>{stage}</strong><Status value={latest.get(stage)?.status ?? "pending"}/></div> },
     style: { width: 210, background: "var(--surface)", borderColor: "var(--line)", color: "var(--text)" },
   }));
-  const edges: Edge[] = stages.slice(1).map((stage, index) => ({ id: stage, source: stages[index], target: stage, animated: latest.get(stage)?.status === "running" }));
+  const connections = [
+    ["Planning","Exploratory data analysis"], ["Exploratory data analysis","Modeling"],
+    ["Modeling","Evaluation"], ["Evaluation","Decision routing"],
+    ["Decision routing","Explanation"], ["Decision routing","Self-correction"],
+    ["Self-correction","Evaluation"], ["Explanation","Final report"],
+  ];
+  const edges: Edge[] = connections.map(([source, target]) => ({
+    id: source + "-" + target, source, target,
+    animated: latest.get(target)?.status === "running",
+    style: { strokeDasharray: source === "Self-correction" || target === "Self-correction" ? "4 4" : undefined },
+  }));
+  const selectedEvents = selected ? events.filter(event => event.stage === selected) : [];
+  const started = selectedEvents.find(event => event.status === "running");
+  const finished = selectedEvents.findLast(event => ["completed","failed","skipped"].includes(event.status));
   const chart = (values: Record<string, number>) => Object.entries(values).slice(0, 24).map(([name, value]) => ({ name, value }));
+  const ranked = Object.entries(result.modeling?.model_comparison ?? {}).sort((a,b) => b[1].f1 - a[1].f1 || b[1].accuracy - a[1].accuracy);
+  const modelMetrics = result.modeling?.model_comparison[model];
   return <>
     <div className="detail-head"><div><h2>{run.dataset}</h2><p><code>{id.slice(0, 8)}</code> · Target {run.config.target} · {date(run.created)}</p></div><Status value={status}/></div>
     <div className="tabs" aria-label="Analysis sections">{["Agent Runs","EDA Explorer","Model Benchmarking","Model Evaluation","AI Insights","Reports"].map(name => <button key={name} aria-pressed={name === view || (name === "Agent Runs" && workflow)} onClick={() => setView(name)}>{name}</button>)}</div>
@@ -96,7 +115,8 @@ export function Analysis({ id, view, setView, refresh, exit }: { id: string; vie
       <div className="workflow-grid">
         <Panel title="Agent workflow" caption="Select a stage to inspect its execution."><div className="flow"><ReactFlow nodes={nodes} edges={edges} fitView fitViewOptions={{ padding: 0.2 }} onNodeClick={(_, node) => setSelected(node.id)} nodesDraggable={false} nodesConnectable={false}><Background gap={18}/></ReactFlow></div></Panel>
         <Panel title={selected || "Execution details"} caption={selected ? "Recorded stage events" : "Most recent events"}>
-          <div className="log">{(selected ? events.filter(event => event.stage === selected) : events.slice(-6)).map(event => <div key={event.id}><Status value={event.status}/><strong>{event.stage}</strong><time>{date(event.time)}</time>{event.detail && <p>{event.detail}</p>}</div>)}
+          {selected && <dl className="facts padded"><dt>Stage status</dt><dd><Status value={latest.get(selected)?.status ?? "pending"}/></dd><dt>Started</dt><dd>{date(started?.time)}</dd><dt>Finished</dt><dd>{date(finished?.time)}</dd><dt>Elapsed</dt><dd>{started && finished ? ((Date.parse(finished.time) - Date.parse(started.time)) / 1000).toFixed(2) + " s" : "—"}</dd></dl>}
+          <div className="log">{(selected ? selectedEvents : events.slice(-6)).map(event => <div key={event.id}><Status value={event.status}/><strong>{event.stage}</strong><time>{date(event.time)}</time>{event.detail && <p>{event.detail}</p>}</div>)}
           {!events.some(event => !selected || event.stage === selected) && <p className="muted">Waiting for stage events.</p>}</div>
         </Panel>
       </div>
@@ -115,10 +135,21 @@ export function Analysis({ id, view, setView, refresh, exit }: { id: string; vie
       {edaTab === "Target analysis" && <Panel title="Target distribution"><Bars label="Records" data={chart(result.eda.target_distribution)}/></Panel>}
       {edaTab === "Correlations" && (profile?.error ? <ErrorNote message={profile.error}/> : profile?.data ? <Panel title="Pearson correlation" caption="Up to 24 numeric columns"><Table headers={["Feature",...Object.keys(profile.data.correlations)]} rows={Object.entries(profile.data.correlations).map(([name, values]) => [name,...Object.entries(values).map(([column, value]) => <span className="heat" key={column} style={{ background: value == null ? undefined : "color-mix(in srgb, var(--accent) " + (Math.abs(value) * 25) + "%, transparent)" }}>{value?.toFixed(2) ?? "—"}</span>)])}/></Panel> : <Loading/>)}
     </> : <Empty title="EDA results unavailable"/>)}
-    {view === "Model Benchmarking" && (result.modeling ? <Panel title="Candidate performance" caption={"Selected by the modeling agent · " + modelName(result.modeling.best_model)}>
-      <Table headers={["Candidate","Accuracy","Precision","Recall","F1","Training time"]} rows={Object.entries(result.modeling.model_comparison).sort((a,b) => b[1].f1 - a[1].f1).map(([name, metrics]) => [modelName(name),percent(metrics.accuracy),percent(metrics.precision),percent(metrics.recall),percent(metrics.f1),metrics.training_time_seconds?.toFixed(2) + " s"])}/>
-      <Bars label="F1 score" data={Object.entries(result.modeling.model_comparison).map(([name, metrics]) => ({ name: modelName(name), value: metrics.f1 }))}/>
-    </Panel> : <Empty title="Benchmark results unavailable"/>)}
+    {view === "Model Benchmarking" && (result.modeling ? <>
+      <Panel title="Candidate performance" caption={"Selected by the modeling agent · " + modelName(result.modeling.best_model)}>
+        <Table headers={["Rank","Candidate","Accuracy","Precision","Recall","F1","Training time"]} rows={ranked.map(([name, metrics], index) => [index + 1,<button className="text-button" key={name} onClick={() => { setModel(name); modelDialog.current?.showModal(); }}>{modelName(name)}</button>,percent(metrics.accuracy),percent(metrics.precision),percent(metrics.recall),percent(metrics.f1),metrics.training_time_seconds?.toFixed(2) + " s"])}/>
+      </Panel>
+      <div className="overview-grid">
+        <Panel title="Weighted F1 comparison"><Bars label="F1 score" data={ranked.map(([name, metrics]) => ({ name: modelName(name), value: metrics.f1 }))}/></Panel>
+        <Panel title="Training duration"><Bars label="Seconds" data={ranked.map(([name, metrics]) => ({ name: modelName(name), value: metrics.training_time_seconds }))}/></Panel>
+      </div>
+      <dialog className="inspection" ref={modelDialog} aria-labelledby="model-inspection-title">
+        <div className="panel-head"><h2 id="model-inspection-title">{modelName(model)}</h2><form method="dialog"><button className="button">Close</button></form></div>
+        {modelMetrics && <dl className="facts padded"><dt>Selection</dt><dd>{model === result.modeling.best_model ? "Best model" : "Candidate"}</dd><dt>Test split</dt><dd>{percent(run.config.test_size)}</dd><dt>Random state</dt><dd>{run.config.random_state}</dd>{["accuracy","precision","recall","f1"].map(metric => <div className="fact-row" key={metric}><dt>{modelName(metric)}</dt><dd>{percent(modelMetrics[metric])}</dd></div>)}<dt>Training time</dt><dd>{modelMetrics.training_time_seconds?.toFixed(2)} s</dd>
+          {model === result.modeling.best_model && <><dt>Artifact</dt><dd><a href={"/api/analyses/" + id + "/artifacts/best_model.pkl"}>Download model</a></dd></>}
+        </dl>}
+      </dialog>
+    </> : <Empty title="Benchmark results unavailable"/>)}
     {view === "Model Evaluation" && (result.evaluation ? <Panel title="Evaluation verdict" caption="System score = 40% data quality + 60% model quality · threshold 0.70" action={<Status value={result.evaluation.verdict}/>}>
       <div className="form-fields">{Object.entries({ "Data quality": result.evaluation.data_quality_score, "Model quality": result.evaluation.model_quality_score, "System score": result.evaluation.system_score }).map(([name, score]) => <label key={name}>{name} · {percent(score)}<progress value={score} max={1}/></label>)}
         <p>{result.evaluation.verdict === "PASS" ? "System score meets the acceptance threshold." : "System score is below the acceptance threshold."}</p>

@@ -116,6 +116,7 @@ export default function Workspace() {
 
 function Overview({ runs, datasets, online, open, create, go }: { runs: Run[]; datasets: Dataset[]; online: boolean; open: (id: string) => void; create: () => void; go: (page: string) => void }) {
   const results = runs.filter(run => run.score != null);
+  const benchmarked = runs.filter(run => run.model_f1 != null);
   const active = runs.filter(run => ["running","queued"].includes(run.status));
   const passed = runs.filter(run => run.verdict === "PASS").length;
   const failed = runs.filter(run => run.status === "failed").length;
@@ -127,7 +128,7 @@ function Overview({ runs, datasets, online, open, create, go }: { runs: Run[]; d
   const metrics: [string, string | number, LucideIcon][] = [
     ["Analysis runs",runs.length,Activity],["Datasets processed",new Set(results.map(run => run.dataset_id)).size,Database],
     ["Passed evaluations",passed,CircleCheck],["Failed executions",failed,ShieldCheck],
-    ["Mean system score",percent(results.length ? results.reduce((sum,run) => sum + (run.score ?? 0),0) / results.length : undefined),ChartColumnIncreasing],
+    ["Mean model F1",percent(benchmarked.length ? benchmarked.reduce((sum,run) => sum + (run.model_f1 ?? 0),0) / benchmarked.length : undefined),ChartColumnIncreasing],
     ["Active runs",active.length,Workflow],
   ];
   return <>
@@ -138,7 +139,7 @@ function Overview({ runs, datasets, online, open, create, go }: { runs: Run[]; d
     </div>
     <Panel title="Recent analysis executions" caption="Search, filter, or reopen an analysis" action={<button className="button" onClick={() => go("Analysis History")}>View history <ArrowRight size={14}/></button>}><RunTable runs={runs} open={open} create={create}/></Panel>
     <div className="overview-grid">
-      <Panel title="Model performance trend" caption="System scores from recent evaluated runs"><Bars label="System score" data={results.slice(0,10).reverse().map(run => ({ name: run.id.slice(0,6),value: run.score ?? 0 }))}/></Panel>
+      <Panel title="Model performance trend" caption="Weighted F1 of the selected model in recent runs"><Bars label="Weighted F1" data={benchmarked.slice(0,10).reverse().map(run => ({ name: run.id.slice(0,6),value: run.model_f1 ?? 0 }))}/></Panel>
       <Panel title="Dataset activity" action={<button className="text-button" onClick={() => go("Dataset Registry")}>Registry <ArrowRight size={14}/></button>}>{datasets.length ? <div className="activity-list">{datasets.slice(0,5).map(item => <div key={item.id}><Database size={16}/><strong>{item.name}</strong><span>{date(item.created)}</span></div>)}</div> : <Empty title="No datasets uploaded" action={<button className="button" onClick={() => go("Dataset Registry")}>Upload CSV</button>}/>}</Panel>
     </div>
     <Panel title="System execution health" action={<button className="text-button" onClick={() => go("System Health")}>Service checks <ArrowRight size={14}/></button>}><div className="toolbar"><Status value={online ? "online" : "unverified"}/><span className="muted">{active.length} active · {failed} failed</span></div></Panel>

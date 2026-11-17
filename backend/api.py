@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal
 from urllib.parse import unquote
 from uuid import UUID, uuid4
 
@@ -206,6 +207,10 @@ class AnalysisConfig(BaseModel):
     target: str = Field(min_length=1)
     test_size: float = Field(default=0.2, ge=0.1, le=0.5)
     random_state: int = Field(default=42, ge=0, le=4294967295)
+    models: tuple[Literal["logistic_regression", "random_forest", "gradient_boosting"], ...] = Field(
+        default=("logistic_regression", "random_forest", "gradient_boosting"),
+        min_length=1, max_length=3,
+    )
 
 
 @app.post("/api/analyses", status_code=202)
@@ -269,7 +274,8 @@ def execute(run, config):
             agent = ModelingAgent()
             agent.random_state = config["random_state"]
             result = agent.run(path, target, "classification", test_size=config["test_size"],
-                               model_dir=str(folder), impute=impute)
+                               model_dir=str(folder), impute=impute,
+                               models=tuple(config["models"]))
             result.pop("model_artifact_path")
             return result
 
@@ -350,6 +356,7 @@ def analyses():
           SELECT id,dataset_id,dataset,created,status,
           json_extract(results,'$.modeling.best_model') AS model,
           json_extract(results,'$.evaluation.system_score') AS score,
+          json_extract(results,'$.modeling.model_metrics.f1') AS model_f1,
           json_extract(results,'$.evaluation.verdict') AS verdict
           FROM runs ORDER BY created DESC
         """)]

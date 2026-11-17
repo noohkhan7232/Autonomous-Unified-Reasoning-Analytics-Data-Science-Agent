@@ -2,6 +2,44 @@
 
 > An autonomous data science agent that plans, analyzes, models, evaluates, explains, and reports with minimal human intervention.
 
+## Run the workspace
+
+Use Python 3.12 and Node.js 24. From the repository root, install dependencies:
+
+```powershell
+python -m pip install -r requirements.txt httpx
+npm.cmd --prefix frontend ci
+```
+
+Start the API and web app in separate terminals:
+
+```powershell
+python -m uvicorn backend.api:app --host 127.0.0.1 --port 8000
+npm.cmd --prefix frontend run dev
+```
+
+Open [the local workspace](http://127.0.0.1:3000). Upload a CSV in Dataset Registry, inspect its schema, then select **Analyze dataset** to configure and start a classification run. Run records, events, reports, uploads, and model artifacts persist under `output/workspace` by default.
+
+Set `GOOGLE_API_KEY` in the backend environment for Gemini explanations. Set `AURA_GEMINI_MODEL` to override the workspace's default model. Without a working Gemini connection the report still includes the measured results and records the explanation as unavailable.
+
+The local workspace uses SQLite and a single background worker. Run a single API process against each storage directory. Interrupted jobs are recorded as failed when the API restarts. This local workspace has no account or access-control layer.
+
+Docker Compose bundles both services and maps the workspace to port 3000 on loopback:
+
+```powershell
+docker compose up --build
+```
+
+Run the API integration test, Next.js build, and browser workflow:
+
+```powershell
+python -m unittest discover -s tests -v
+npm.cmd --prefix frontend run build
+node frontend/tests/workspace.mjs
+```
+
+The browser test uses Microsoft Edge and requires loopback ports 3031 and 8031. It uses temporary storage and disables Gemini.
+
 ---
 
 ## 1. Overview

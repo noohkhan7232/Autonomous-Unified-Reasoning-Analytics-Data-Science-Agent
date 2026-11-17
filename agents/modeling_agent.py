@@ -45,6 +45,7 @@ class ModelingAgent:
         test_size: float = 0.2,
         model_dir: str = "artifacts/models",
         impute: bool = False,
+        models: tuple[str, ...] | None = None,
     ) -> Dict[str, Any]:
 
         # ============================================================
@@ -130,6 +131,8 @@ class ModelingAgent:
                 random_state=self.random_state,
             ),
         }
+        if models is not None:
+            candidates = {name: candidates[name] for name in models}
 
         # ============================================================
         # 6. BENCHMARK ALL MODELS

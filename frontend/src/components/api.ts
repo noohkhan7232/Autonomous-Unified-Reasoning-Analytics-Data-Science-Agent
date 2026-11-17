@@ -4,7 +4,7 @@ export type Dataset = {
 };
 export type Run = {
   id: string; dataset_id: string; dataset: string; created: string; status: string;
-  model?: string; score?: number; verdict?: string;
+  model?: string; score?: number; model_f1?: number; verdict?: string;
 };
 export type Metrics = Record<string, number>;
 export type Results = {

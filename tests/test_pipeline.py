@@ -10,6 +10,25 @@ from backend import api
 
 
 class WorkspaceTest(unittest.TestCase):
+    def test_missing_numeric_feature_triggers_real_retraining(self):
+        csv = "amount,label\n" + "".join(
+            f"{index if index % 5 else ''},{int(index >= 30)}\n"
+            for index in range(60)
+        )
+        with tempfile.TemporaryDirectory() as storage, patch.object(api, "ROOT", Path(storage)):
+            with patch.dict("os.environ", {"GOOGLE_API_KEY": ""}), TestClient(api.app) as client:
+                upload = client.post("/api/datasets/upload", headers={"X-Filename": "missing.csv"}, content=csv)
+                self.assertEqual(upload.status_code, 201, upload.text)
+                created = client.post("/api/analyses", json={"dataset_id": upload.json()["id"], "target": "label", "models": ["logistic_regression"]})
+                self.assertEqual(created.status_code, 202, created.text)
+                run_url = f'/api/analyses/{created.json()["id"]}'
+                stream = client.get(run_url + "/events").text
+                self.assertIn('"stage": "Self-correction", "status": "retrying"', stream)
+                self.assertIn('"stage": "Self-correction", "status": "completed"', stream)
+                run = client.get(run_url).json()
+                self.assertEqual(run["status"], "completed")
+                self.assertEqual(list(run["results"]["modeling"]["model_comparison"]), ["logistic_regression"])
+
     def test_csv_analysis_stream_and_persistence(self):
         csv = "amount,segment,label\n" + "".join(
             f"{index + group * 100},{'a' if group == 0 else 'b'},{group}\n"

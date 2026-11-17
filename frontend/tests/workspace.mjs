@@ -31,6 +31,12 @@ try {
   page.on("pageerror", error => errors.push(error.message));
   await page.goto(url);
   await page.getByRole("heading", { name: "Overview", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "Recent analysis executions" }).waitFor();
+  for (const width of [1440, 1280, 1024, 768, 375]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "Overview overflows at " + width);
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.getByRole("navigation").getByRole("button", { name: "Dataset Registry", exact: true }).click();
   const sample = "amount,group,label\n" + Array.from({ length: 60 }, (_, i) => `${i},${i < 30 ? "a" : "b"},${i < 30 ? 0 : 1}`).join("\n");
   await page.locator("input[type=file]").setInputFiles({ name: "browser-sample.csv", mimeType: "text/csv", buffer: Buffer.from(sample) });
@@ -49,6 +55,9 @@ try {
   await page.getByRole("heading", { name: "Exploratory summary" }).waitFor();
   await page.locator(".tabs").getByRole("button", { name: "Model Benchmarking" }).click();
   await page.getByRole("cell", { name: "Gradient Boosting", exact: true }).waitFor();
+  await page.getByRole("button", { name: "Gradient Boosting", exact: true }).click();
+  await page.getByRole("dialog", { name: "Gradient Boosting" }).waitFor();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await page.locator(".tabs").getByRole("button", { name: "Model Evaluation" }).click();
   await page.getByRole("heading", { name: "Evaluation verdict" }).waitFor();
   await page.locator(".tabs").getByRole("button", { name: "AI Insights" }).click();
@@ -64,7 +73,7 @@ try {
   await page.getByRole("heading", { name: "Execution timeline" }).waitFor();
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "Mobile page overflows");
   assert.deepEqual(errors, []);
-  console.log("Browser workflow passed at 1440 px and 375 px.");
+  console.log("Browser workflow passed. Overview checked at 1440, 1280, 1024, 768, and 375 px.");
 } finally {
   await browser?.close();
   for (const server of servers) server.kill();
