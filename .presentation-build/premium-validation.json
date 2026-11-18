@@ -1,0 +1,12 @@
+{
+  "slides": 18,
+  "speaker_notes": 18,
+  "editable_chart": true,
+  "embedded_workbook": true,
+  "editable_table": true,
+  "connectors": 41,
+  "fade_transitions": 18,
+  "identity_checks": "passed",
+  "chart_values_match_source": true,
+  "guide_pages": 11
+}

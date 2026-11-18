@@ -1,343 +1,335 @@
-# AURA-DS — Autonomous Unified Reasoning & Analytics Data Science Agent
+# AURA-DS
 
-> An autonomous data science agent that plans, analyzes, models, evaluates, explains, and reports with minimal human intervention.
+**Autonomous Unified Reasoning & Analytics Data Science Agent**
 
-## Run the workspace
+AURA-DS brings dataset exploration, classification experiments, agent execution monitoring, model evaluation, and analytical reporting into one workspace. A Next.js interface connects to a FastAPI service that runs the existing Python agents and stores results for later review.
 
-Use Python 3.12 and Node.js 24. From the repository root, install dependencies:
+## The problem
+
+A typical data science workflow involves profiling a dataset, choosing a target, preparing features, training several models, comparing metrics, interpreting results, and preparing a report. Repeating these steps across notebooks and scripts takes time and makes it harder to track how a result was produced.
+
+AURA-DS coordinates those steps through specialized agents. Users can configure an experiment, follow its execution, inspect measured results, and reopen the report and artifacts later.
+
+## What makes AURA-DS different?
+
+| Design choice | How it helps |
+|---|---|
+| A connected analytical workflow | Dataset inspection, training, evaluation, and reporting share the same analysis context. |
+| Observable agent execution | Server-Sent Events expose recorded stage transitions and timestamps as the backend executes. |
+| Multiple classifier candidates | Logistic Regression, Random Forest, and Gradient Boosting can be benchmarked on the same train/test split. |
+| Explicit model selection | The engine selects the highest weighted F1 score, using accuracy as the tie-breaker. |
+| A separate system verdict | Evaluation combines data quality and model quality using an inspectable scoring rule. |
+| Targeted self-correction | Missing-feature failures can trigger retraining with imputation fitted on the training data. |
+| Knowledge-grounded explanations | The explanation agent retrieves local reference material and uses Gemini to interpret the analytical outputs. Retrieved source information is available when generation succeeds. |
+| Persistent execution records | SQLite stores run configuration, metrics, events, and reports so a completed analysis can be reopened. |
+
+These are the project's implementation choices. Comparative performance against other analytics products has not been benchmarked.
+
+## Capabilities
+
+- CSV upload with validation, progress, cancellation, and a 20 MB size limit.
+- Dataset schema, paginated preview, search, sorting, and column visibility.
+- Profiling of missing values, duplicate rows, numeric statistics, categorical counts, distributions, and correlations.
+- Classification configuration with target selection, model selection, test split, and random state.
+- Background analysis execution with a workflow diagram, stage details, live events, and an execution timeline.
+- Model comparison with accuracy, weighted precision, weighted recall, weighted F1, and training duration.
+- Evaluation scores, PASS/FAIL verdicts, detected issues, and recommendations.
+- Analytical reports with copy, print, and Markdown download actions.
+- Downloads of the winning model and target-distribution plot.
+- Searchable run history, report reopening, and deletion of finished runs.
+- Light and dark themes, responsive layouts, and service-status checks.
+
+## Architecture
+
+```mermaid
+flowchart TD
+    User["User"] --> Web["Next.js workspace"]
+    Web --> Proxy["Same-origin /api proxy"]
+    Proxy --> API["FastAPI service"]
+    API --> Registry["Dataset validation and profiling"]
+    API --> DB[("SQLite metadata, runs, events, reports")]
+    Registry --> Storage[("CSV and artifact storage")]
+    API --> Worker["Single background analysis worker"]
+
+    Worker --> Planning["Planning agent"]
+    Planning --> EDA["EDA agent"]
+    EDA --> Modeling["Modeling agent"]
+    Modeling --> Evaluation["Evaluation agent"]
+    Evaluation --> Decision{"Correction applicable?"}
+    Decision -->|"Missing-data correction"| Correction["Train-set imputation and retraining"]
+    Correction --> Evaluation
+    Decision -->|"Continue"| Explanation["Explanation agent"]
+    Explanation --> Report["Final report"]
+
+    Knowledge["Local PDF, TXT, Markdown documents"] --> Retrieval["Chunking, Google embeddings, Chroma retrieval"]
+    Retrieval --> Explanation
+    Explanation --> Gemini["Google Gemini"]
+    Worker --> DB
+    Worker --> Storage
+    DB --> SSE["SSE execution events"]
+    SSE --> Web
+```
+
+The API accepts an analysis configuration, persists a queued run, and submits it to one background worker. Agent transitions are recorded in SQLite and delivered to the interface through SSE. Each workspace run has its own artifact directory.
+
+The explanation stage loads reference documents from `knowledge/documents/`, builds the retrieval store through the existing knowledge layer, and calls Gemini. If explanation generation fails, the workspace records it as unavailable and still produces a report containing the measured analytical results.
+
+### Execution entry points
+
+| Entry point | Behavior |
+|---|---|
+| Web workspace and `backend/api.py` | Configurable classification runs, persistence, live events, missing-data correction, and report generation. |
+| `main.py` | Original direct Python pipeline using `data/adult.csv`. It stops when evaluation fails. |
+| `orchestration/analysis_graph.py` | Separate LangGraph workflow with conditional routing and a correction flag passed to modeling. |
+
+The workspace uses its API worker to coordinate the agents. The CLI and LangGraph entry points retain their own execution behavior.
+
+### Evaluation rule
+
+```text
+System score = 0.4 × Data quality score + 0.6 × Model quality score
+PASS when system score >= 0.70
+```
+
+For the current classification engine, model quality is based on accuracy. Data quality starts at 1.0 and receives penalties for missing values and severe target imbalance. Model selection uses weighted F1 first, so selection and evaluation use different criteria.
+
+A PASS indicates that this scoring rule was satisfied. Assess suitability using the dataset, class balance, held-out metrics, and intended application.
+
+## Technology stack
+
+| Layer | Technologies |
+|---|---|
+| Interface | Next.js App Router, React, TypeScript, CSS design tokens, Lucide |
+| Visualizations | Recharts, React Flow, Matplotlib |
+| API and validation | FastAPI, Pydantic, Uvicorn |
+| Data and ML | pandas, NumPy, scikit-learn, joblib |
+| Agent and knowledge layer | LangGraph, LangChain, Gemini, Google embeddings, Chroma |
+| Persistence | SQLite and local files |
+| Verification | Python unittest, FastAPI TestClient, Playwright with Microsoft Edge |
+| Packaging | Dockerfiles and Docker Compose |
+
+## Project structure
+
+```text
+.
+├── frontend/
+│   ├── src/app/                 Application entry points and styles
+│   ├── src/components/          Workspace views and typed API client
+│   ├── tests/workspace.mjs      Browser workflow test
+│   └── Dockerfile
+├── backend/
+│   ├── api.py                  API, persistence, worker, and SSE
+│   └── Dockerfile
+├── agents/                     Planning, EDA, modeling, evaluation, explanation
+├── core/                       Original shared analysis state
+├── orchestration/              Separate LangGraph workflow
+├── knowledge/
+│   ├── documents/              Reference documents for retrieval
+│   ├── document_loader.py
+│   ├── embedder.py
+│   └── retriever.py
+├── data/                       Original input datasets
+├── artifacts/                  Original CLI artifacts
+├── output/workspace/           Local workspace database, CSVs, reports, artifacts
+├── scripts/start-workspace.ps1 Windows launcher implementation
+├── tests/test_pipeline.py      API integration tests
+├── Start-AURA.cmd              Windows workspace launcher
+├── main.py                     Original CLI pipeline
+├── requirements.txt
+├── compose.yaml
+└── README.md
+```
+
+## Installation
+
+Use Python 3.12 and Node.js 24. Run the following commands from this repository's root folder.
+
+### 1. Install dependencies
+
+A virtual environment keeps Python dependencies together. Calling its interpreter directly also avoids requiring PowerShell activation.
 
 ```powershell
-python -m pip install -r requirements.txt httpx
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt httpx
 npm.cmd --prefix frontend ci
 ```
 
-Start the API and web app in separate terminals:
+### 2. Configure the explanation service
+
+Create or update `.env` in the project root. Supply your own Google API key.
+
+```dotenv
+GOOGLE_API_KEY=your_google_api_key
+AURA_GEMINI_MODEL=gemini-2.5-flash
+```
+
+The workspace can train and evaluate models without this key. Gemini explanations and Google embedding requests require working credentials and network access. Keep `.env` private and excluded from version control.
+
+Place relevant PDF, UTF-8 TXT, or Markdown reference documents in `knowledge/documents/` for retrieval.
+
+### 3. Start the API
+
+In the first terminal, from the project root, run:
 
 ```powershell
-python -m uvicorn backend.api:app --host 127.0.0.1 --port 8000
+.\.venv\Scripts\python.exe -m uvicorn backend.api:app --host 127.0.0.1 --port 8000
+```
+
+### 4. Start the frontend
+
+In a second terminal, from the same project root, run:
+
+```powershell
 npm.cmd --prefix frontend run dev
 ```
 
-Open [the local workspace](http://127.0.0.1:3000). Upload a CSV in Dataset Registry, inspect its schema, then select **Analyze dataset** to configure and start a classification run. Run records, events, reports, uploads, and model artifacts persist under `output/workspace` by default.
+Keep both terminals open, wait for Next.js to report that it is ready, and open [AURA-DS](http://127.0.0.1:3000/).
 
-Set `GOOGLE_API_KEY` in the backend environment for Gemini explanations. Set `AURA_GEMINI_MODEL` to override the workspace's default model. Without a working Gemini connection the report still includes the measured results and records the explanation as unavailable.
+### Windows launcher
 
-The local workspace uses SQLite and a single background worker. Run a single API process against each storage directory. Interrupted jobs are recorded as failed when the API restarts. This local workspace has no account or access-control layer.
+`Start-AURA.cmd` starts both services and keeps the frontend attached to its launcher window. The launcher uses `python.exe` from PATH. To use the virtual environment installed above, launch it from a terminal with that environment first on PATH:
 
-Docker Compose bundles both services and maps the workspace to port 3000 on loopback:
+```powershell
+$env:Path = (Join-Path (Get-Location) '.venv\Scripts') + ';' + $env:Path
+.\Start-AURA.cmd
+```
+
+If dependencies are already installed in the Python available on PATH, double-click `Start-AURA.cmd`. Keep its window open while using the application.
+
+The launcher uses an existing production build when `frontend/.next/BUILD_ID` exists. Otherwise it starts development mode. After changing frontend code, rebuild before using production mode:
+
+```powershell
+npm.cmd --prefix frontend run build
+```
+
+Run development and production build commands at separate times to avoid competing writes to generated files.
+
+## How to use the project
+
+1. Open **Dataset Registry**, select **Choose CSV**, and upload a dataset.
+2. Inspect its **Overview**, **Data preview**, **Schema**, **Profiling**, and **Data quality** tabs.
+3. Select **Analyze dataset** and choose the target column.
+4. Select one or more classifiers, set the test split between 10% and 50%, and choose a random state.
+5. Select **Run analysis**. The workspace opens the new execution.
+6. Follow stage transitions in **Agent Runs** and inspect the execution timeline.
+7. Open **EDA Explorer** to inspect feature statistics, distributions, missing values, and correlations.
+8. Open **Model Benchmarking** to compare candidate metrics, training times, and the selected model.
+9. Open **Model Evaluation** to review the system score, verdict, and recommendations.
+10. Open **AI Insights** to read the report and inspect retrieved knowledge when available.
+11. Use **Reports** to download the report or artifacts.
+12. Return to **Analysis History** to search and reopen a saved run.
+
+### Dataset requirements
+
+- Upload a readable UTF-8 CSV up to 20 MB.
+- Include at least two columns and at least one data row.
+- Choose a classification target containing 2–50 distinct classes and no missing target values.
+- Each class needs at least two records. Both training and test partitions must have enough rows to contain all classes.
+- Resolve unsuitable feature types or values if training reports an error. The correction path handles supported missing-feature cases through training-set imputation.
+
+## Configuration
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `GOOGLE_API_KEY` | Gemini and embedding credentials | Unconfigured |
+| `AURA_GEMINI_MODEL` | Workspace explanation model | `gemini-2.5-flash` |
+| `AURA_STORAGE` | Backend storage directory | `output/workspace` |
+| `AURA_API_URL` | Next.js backend destination | `http://127.0.0.1:8000` |
+
+For a production frontend build, set `AURA_API_URL` before building. The browser calls the frontend's same-origin API proxy.
+
+## Persistence and artifacts
+
+The local workspace stores its SQLite database at `output/workspace/workspace.sqlite3`. Uploaded CSVs are assigned generated identifiers. Each run stores its generated files in a directory named after its run ID.
+
+Run history includes configuration, events, model metrics, evaluation results, and report text. The API exposes downloads through validated identifiers and an artifact allowlist.
+
+Back up the complete workspace storage directory while the API is stopped to retain both the database and its associated files. Docker Compose stores workspace data in the named `workspace` volume.
+
+## API overview
+
+| Method | Route | Purpose |
+|---|---|---|
+| POST | `/api/datasets/upload` | Upload a CSV body with an `X-Filename` header |
+| GET | `/api/datasets` | List registered datasets |
+| GET | `/api/datasets/{id}` | Inspect dataset metadata and schema |
+| GET | `/api/datasets/{id}/profile` | Retrieve profiling statistics |
+| GET | `/api/datasets/{id}/preview` | Search, sort, and paginate preview rows |
+| POST | `/api/analyses` | Queue a classification run |
+| GET | `/api/analyses` | List run summaries |
+| GET | `/api/analyses/{id}` | Retrieve a run, configuration, results, and report |
+| GET | `/api/analyses/{id}/events` | Stream execution events using SSE |
+| GET | `/api/analyses/{id}/results` | Retrieve structured results |
+| GET | `/api/analyses/{id}/report` | Download the Markdown report |
+| GET | `/api/analyses/{id}/artifacts` | List available artifacts |
+| GET | `/api/analyses/{id}/artifacts/{name}` | Download an allowed artifact |
+| DELETE | `/api/analyses/{id}` | Delete a finished run and its artifacts |
+| GET | `/api/health` | Inspect backend service status |
+
+With the API running, browse the [interactive API documentation](http://127.0.0.1:8000/docs).
+
+## Docker
+
+From the repository root, run:
 
 ```powershell
 docker compose up --build
 ```
 
-Run the API integration test, Next.js build, and browser workflow:
+Compose starts the API and web service, publishes [the workspace](http://127.0.0.1:3000/) on loopback, and persists state in a named volume. It reads the Google key and model variables through the Compose environment configuration.
+
+The Compose configuration has been validated. A complete container build and runtime verification remain pending.
+
+## Verification
+
+Run the backend tests:
 
 ```powershell
-python -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Build the frontend with TypeScript checking:
+
+```powershell
 npm.cmd --prefix frontend run build
+```
+
+Run the browser workflow with Microsoft Edge installed:
+
+```powershell
 node frontend/tests/workspace.mjs
 ```
 
-The browser test uses Microsoft Edge and requires loopback ports 3031 and 8031. It uses temporary storage and disables Gemini.
+The browser test starts temporary services on ports 3031 and 8031, uses temporary storage, and disables Gemini. Run it with the Python dependencies available on PATH, or prepend the virtual environment to PATH as shown in the launcher instructions.
 
----
+Previous workspace verification covered two API integration tests, a production frontend build, and a browser workflow from upload through reporting and history reopening. Responsive Overview checks covered widths of 1440, 1280, 1024, 768, and 375 pixels. Live Gemini generation and retrieval were not verified in those tests.
 
-## 1. Overview
+## Troubleshooting
 
-AURA-DS is an autonomous data science pipeline that goes beyond a single ML script. Instead of manually chaining together exploratory analysis, model training, evaluation, and reporting, AURA-DS orchestrates the entire workflow through a sequence of specialized agents — each responsible for one stage of the analytical process.
-
-What sets AURA-DS apart from a conventional ML script is that it combines:
-
-- **Autonomous orchestration** — a planning layer that sequences the pipeline stages
-- **Machine learning benchmarking** — multiple models trained and compared automatically
-- **Intelligent evaluation** — a scoring layer that judges model quality against defined criteria
-- **Retrieval-Augmented Generation (RAG)** — a knowledge base that grounds explanations in reference material
-- **LLM-based explanation** — Google Gemini (via LangChain) translates raw metrics into human-readable insight
-
-The result is a single command that takes a dataset from raw data to a fully explained, reported outcome.
-
----
-
-## 2. Problem Statement
-
-Traditional data science workflows require manually coordinating multiple disconnected steps:
-
-**data analysis → model training → model comparison → evaluation → interpretation → reporting**
-
-This creates several recurring pain points:
-
-- Repetitive, boilerplate analysis work for every new dataset
-- Fragmented workflows split across notebooks, scripts, and manual review
-- Inconsistent or subjective evaluation criteria between projects
-- Heavy dependency on a human analyst to interpret model output
-- Difficulty reproducing a complete end-to-end analytical workflow
-
-AURA-DS addresses this by unifying the entire process into a single autonomous pipeline — planning, executing, evaluating, and explaining results without step-by-step manual intervention.
-
----
-
-## 3. What Problem Does It Solve?
-
-| Traditional Workflow | AURA-DS |
+| Symptom | What to check |
 |---|---|
-| Manual analysis | Automated EDA |
-| Manual model comparison | Automated model benchmarking |
-| Manual evaluation | Intelligent, criteria-based evaluation |
-| Static documentation | Knowledge-backed, RAG-grounded explanation |
-| Multiple disconnected steps | Unified autonomous pipeline |
+| `ERR_CONNECTION_REFUSED` at port 3000 | Start the frontend and wait for Ready. Keep its terminal or launcher window open. |
+| Interface opens but API requests fail | Start the API on port 8000 and inspect its terminal output or `output/workspace/api.stderr.log` when using the launcher. |
+| Launcher reports missing Python modules | Use the Python environment where dependencies were installed. The launcher resolves `python.exe` through PATH. |
+| Launcher reports a busy port | Check the existing server window. Reuse it or close that server before starting another instance. |
+| UI still shows an older version | Rebuild the frontend if the launcher is using an existing production build. |
+| Report says explanation unavailable | Check Google credentials, network connectivity, the configured model, reference documents, and backend logs. |
+| Analysis validation rejects a target | Check class count, missing target values, samples per class, and the selected split. |
+| A run is failed after an API restart | Interrupted queued or running jobs are marked failed. Start a new analysis. |
+| Build fails while development mode is active | Stop the development server and rerun the build. |
 
----
+## Current boundaries and next steps
 
-## 4. Key Capabilities
+The current workspace supports CSV classification and uses one background worker per API process. Run one API process per storage directory. Queued or running jobs are marked failed after a worker restart.
 
-- Autonomous planning of the analytical workflow
-- Automated exploratory data analysis (EDA)
-- Multi-model benchmarking (e.g., Logistic Regression, Random Forest, Gradient Boosting)
-- Intelligent evaluation with a composite system score and pass/fail verdict
-- Knowledge retrieval via a RAG pipeline over a local document store
-- LLM-powered explanation of results using Google Gemini
-- End-to-end orchestration from raw dataset to final report
-- Artifact generation (plots, benchmark visuals, evaluation summaries)
-- Automated final analytical report
+Authentication, workspace access controls, regression training, Excel upload, cross-validation, hyperparameter search, and distributed job execution remain future work. Keep the local deployment bound to loopback.
 
----
+The health page reports configured or checked status for each service. Gemini connectivity and the knowledge store are checked during explanation execution.
 
-## 5. Architecture
-
-```mermaid
-flowchart TD
-    A[User / Dataset] --> B[AURA-DS Orchestrator]
-    B --> C[Planning Agent]
-    C --> D[EDA Agent]
-    D --> E[Modeling Agent]
-    E --> F[Evaluation Agent]
-    F --> G[Knowledge Retrieval / RAG]
-    G --> H[Explanation Agent]
-    H --> I[Final Report + Artifacts]
-
-    subgraph Knowledge Layer
-        K1[knowledge/documents] --> K2[Embeddings]
-        K2 --> K3[Vector Store]
-        K3 --> K4[Retriever]
-        K4 --> H
-    end
-```
-
-The orchestrator drives each agent in sequence. The knowledge layer runs in parallel, embedding documents from `knowledge/documents/` so the Explanation Agent can ground its output in retrieved reference material rather than relying purely on model output.
-
----
-
-## 6. Technology Stack
-
-| Category | Technology |
-|---|---|
-| Language | Python |
-| Orchestration / LLM Framework | LangChain |
-| LLM (Explanation Layer) | Google Gemini |
-| Embeddings | Google Generative AI Embeddings |
-| Machine Learning | Scikit-learn |
-| Data Handling | Pandas, NumPy |
-| Visualization | Matplotlib |
-| Testing | Pytest |
-| Version Control | Git / GitHub |
-
----
-
-## 7. Project Structure
-
-```
-Autonomous-Unified-Reasoning-Analytics-Data-Science-Agent/
-├── agents/            # Individual pipeline agents (planning, EDA, modeling, evaluation, explanation)
-├── artifacts/          # Generated plots and analysis artifacts (e.g., eda_plots/)
-├── core/               # Core pipeline logic and shared utilities
-├── data/                # Input datasets
-├── knowledge/           # RAG knowledge base (knowledge/documents/)
-├── orchestration/       # Pipeline orchestration / execution flow
-├── output/               # Final generated reports and result visuals
-├── scripts/               # Helper and utility scripts
-├── tests/                   # Test suite (pytest)
-├── main.py                   # Entry point — runs the full autonomous pipeline
-├── requirements.txt            # Python dependencies
-├── .env                          # Environment variables (not committed)
-└── README.md
-```
-
-> **Note:** Auto-generated files (`__pycache__`, virtual environments, etc.) are intentionally excluded from this overview.
-
----
-
-## 8. How It Works
-
-The pipeline executes in five main stages:
-
-1. **Planning** — the orchestrator determines the sequence of steps required for the given dataset.
-2. **Exploratory Data Analysis (EDA)** — the EDA Agent profiles the dataset and generates visual artifacts.
-3. **Modeling & Benchmarking** — multiple models are trained and compared on the same dataset.
-4. **Intelligent Evaluation** — the Evaluation Agent scores model performance and produces a system-level verdict.
-5. **RAG-Powered Explanation** — the Explanation Agent retrieves relevant knowledge documents and uses Gemini to generate a human-readable explanation of the results.
-
-The entire pipeline is triggered with a single command:
-
-```bash
-python main.py
-```
-
----
-
-## 9. How to Run Locally (Windows)
-
-### Clone the repository
-
-```bash
-git clone https://github.com/noohkhan7232/Autonomous-Unified-Reasoning-Analytics-Data-Science-Agent.git
-cd Autonomous-Unified-Reasoning-Analytics-Data-Science-Agent
-```
-
-### Create a virtual environment
-
-```bash
-python -m venv .venv
-```
-
-### Activate the environment (PowerShell)
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-If PowerShell blocks script execution, run this once, then re-activate:
-
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-
-### Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### Configure environment variables
-
-Create a `.env` file in the project root:
-
-```
-GOOGLE_API_KEY=your_google_gemini_api_key
-```
-
-> **Security note:** Never commit your `.env` file or API key to GitHub. A valid Google Gemini API key is required for the LLM explanation layer and the Google Generative AI embedding service.
-
-### Run the pipeline
-
-```bash
-python main.py
-```
-
-This launches the full autonomous AURA-DS pipeline — from planning through final report generation.
-
----
-
-## 10. Example Output
-
-**Models benchmarked:**
-- Logistic Regression
-- Random Forest
-- Gradient Boosting
-
-**Best model:** Gradient Boosting
-
-| Metric | Value |
-|---|---|
-| Accuracy | 0.8713 |
-| Precision | 0.8666 |
-| Recall | 0.8713 |
-| F1 Score | 0.8664 |
-| System Score | 0.923 |
-| Verdict | **PASS** |
-
----
-
-## 11. Output Artifacts / Visual Results
-
-> Paths below reflect the repository's `artifacts/` and `output/` directories. Update filenames here if your local generated artifacts differ.
-
-### Target Distribution
-![Target Distribution](artifacts/eda_plots/target_distribution.png)
-*Visualizes the class balance of the target variable during EDA.*
-
-### Model Benchmark
-![Model Benchmark](output/Model_Benchmark.png)
-*Compares performance across all benchmarked models.*
-
-### Intelligent Evaluation
-![Intelligent Evaluation](output/Intelligent_Evaluation.png)
-*Shows the evaluation scoring breakdown and final verdict.*
-
-### Complete Pipeline
-![Complete Pipeline](output/Complete_Pipeline.png)
-*End-to-end view of the autonomous pipeline execution.*
-
----
-
-## 12. Challenges During Development
-
-Building AURA-DS involved solving several non-trivial engineering problems:
-
-- Integrating the embedding layer with Google Generative AI Embeddings and ensuring consistent vectorization of knowledge documents
-- Configuring and securely managing Google Generative AI credentials across environments
-- Structuring environment variable handling so the pipeline runs reliably without hardcoded secrets
-- Connecting the knowledge retrieval layer to the explanation agent so retrieved context was actually used in generation
-- Ensuring documents placed in `knowledge/documents/` were correctly discovered and indexed
-- Coordinating the hand-off between the Evaluation Agent and the RAG-based Explanation Agent
-- Validating that the complete autonomous pipeline ran end-to-end without manual intervention
-
-These were addressed iteratively, resulting in the current stable, working pipeline.
-
----
-
-## 13. Current Status
-
-AURA-DS currently has a **working end-to-end autonomous analytical pipeline**:
-
-**Planning → EDA → Modeling → Evaluation → RAG → Explanation → Final Report**
-
-This represents a strong functional foundation for an autonomous data science agent — not a claim of a fully enterprise-scale production system. It runs a complete real analytical cycle from raw data to explained, reported results.
-
----
-
-## 14. Future Roadmap
-
-The following are **planned future improvements**, not current features:
-
-- Advanced agentic orchestration
-- Support for additional ML algorithms
-- Automated feature engineering
-- Hyperparameter optimization
-- Advanced hybrid (vector + semantic) retrieval
-- Multi-document knowledge base support
-- Data quality monitoring
-- Model drift detection
-- Experiment tracking
-- Persistent memory across runs
-- REST API
-- Web dashboard
-- Docker deployment
-- Cloud deployment
-- Human-in-the-loop approval steps
-- Multi-agent collaboration
-
----
-
-## 15. Why This Project Matters
-
-AURA-DS demonstrates practical, hands-on engineering ability across multiple disciplines that intersect in modern AI systems: data science and machine learning fundamentals, agentic orchestration design, retrieval-augmented generation, LLM integration, and software architecture. Rather than a single isolated script, it reflects the ability to design a coherent, multi-stage autonomous system where each component — planning, analysis, modeling, evaluation, retrieval, and explanation — works together toward a single reliable outcome.
-
----
+Useful next steps include authenticated workspaces, a durable external job queue, PostgreSQL storage, broader model diagnostics, and regression workflows backed by tests.
 
 ## Author
 
 **Nooh Khan**
 
-GitHub: [https://github.com/noohkhan7232](https://github.com/noohkhan7232)
-
-Repository: [https://github.com/noohkhan7232/Autonomous-Unified-Reasoning-Analytics-Data-Science-Agent]
+[GitHub profile](https://github.com/noohkhan7232)

@@ -1,0 +1,18 @@
+# Minimal dependencies actually needed by ai/data_collection/ (Sprint 1) and
+# ai/feature_engineering/ (Sprint 2).
+#
+# ai/requirements.txt contains the FULL future dependency set for all
+# planned ai/ modules (ML, time series, deep learning, NLP), including
+# packages not used yet. As of this writing it has an unresolved conflict
+# (numpy==2.1.1 vs tensorflow==2.17.0's numpy<2.0.0 requirement) that has
+# nothing to do with Sprint 1/2 and will be fixed when Sprint 3 (ML/DL) is
+# actually implemented and those pins are revisited.
+#
+# CI's ai-tests job installs from THIS file so Sprint 1/2's tests aren't
+# blocked by dependency conflicts in code that isn't written yet.
+pandas==2.2.3
+numpy>=1.26.4,<3.0.0
+requests==2.32.3
+yfinance==1.5.1
+pydantic-settings==2.5.2
+pytest==8.3.3

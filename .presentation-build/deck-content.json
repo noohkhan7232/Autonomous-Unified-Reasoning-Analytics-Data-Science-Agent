@@ -1,0 +1,320 @@
+{
+  "team": [
+    [
+      "Shadab Firoz",
+      "2305051530127",
+      "AI/ML Development",
+      "1–3"
+    ],
+    [
+      "Umar Forooque",
+      "2305051530151",
+      "Backend Development",
+      "4–6"
+    ],
+    [
+      "Nooh Khan",
+      "2305051530092",
+      "Frontend Development",
+      "7–9"
+    ],
+    [
+      "Salma Ali",
+      "2305051530118",
+      "Database Management and Design",
+      "10–12"
+    ],
+    [
+      "Mohammad Arslala",
+      "2305051530077",
+      "UI/UX Design",
+      "13–15"
+    ]
+  ],
+  "slides": [
+    {
+      "title": "AI-Powered Financial Analyst",
+      "sub": "Investment Decision Support System",
+      "type": "cover",
+      "src": [
+        "README.md"
+      ],
+      "script": "Good morning. We are presenting the AI-Powered Financial Analyst and Investment Decision Support System. Our goal is to bring market data, model outputs and explanations into one educational research platform. Our five responsibilities cover AI and machine learning, backend, frontend, database, and UI/UX. This presentation distinguishes source code that already exists from the target architecture. Data collection and feature engineering contain substantive implementation. Most user-facing analysis and prediction capabilities remain future work."
+    },
+    {
+      "title": "Problem and project purpose",
+      "type": "columns",
+      "leftTitle": "Analysis challenges",
+      "left": [
+        "Price histories and news arrive through separate sources.",
+        "Different indicator definitions make model comparisons difficult.",
+        "Forecast uncertainty needs a clear explanation."
+      ],
+      "rightTitle": "Project response",
+      "right": [
+        "Normalize market data behind provider adapters.",
+        "Create a shared, documented feature dataset.",
+        "Plan traceable predictions and explanations in one dashboard."
+      ],
+      "note": "Current focus: data preparation. Investment outcomes and forecast accuracy have not been established.",
+      "src": [
+        "docs/SRS.md",
+        "ai/feature_engineering/README.md"
+      ],
+      "script": "The project addresses fragmentation in financial analysis. Historical prices, company information and news arrive through separate providers, and different teams can calculate the same indicator differently. The implemented foundation standardizes data collection and produces a shared feature vocabulary for later model development. The wider design adds forecasting, sentiment and explanations through a single dashboard. These are project objectives rather than measured benefits. We do not claim improved investment returns or predictive accuracy because the repository contains no trained forecasting system or validated performance benchmark."
+    },
+    {
+      "title": "AI/ML module and processing pipeline",
+      "type": "pipeline",
+      "nodes": [
+        "OHLCV input",
+        "Clean + profile",
+        "16 generators",
+        "Reports + CSV"
+      ],
+      "bottomTitle": "Implemented feature engineering",
+      "bottom": [
+        "pandas / NumPy indicators: trend, momentum, volatility, volume and price action.",
+        "Versioned metadata documents each feature. Selection reports flag correlation and variance."
+      ],
+      "note": "Planned: RF / XGBoost, ARIMA / Prophet, LSTM / GRU, FinBERT, decision engine and LLM explanations.",
+      "src": [
+        "ai/feature_engineering/pipeline.py",
+        "ai/feature_engineering/features/__init__.py",
+        "docs/architecture/ARCHITECTURE.md"
+      ],
+      "script": "My assigned responsibility is AI and machine learning. The existing pipeline loads OHLCV data, cleans it, profiles quality, runs sixteen feature generator groups, analyzes the feature set and saves versioned outputs. Indicators use pandas and NumPy. Metadata records formulas and intended use. Feature selection is currently report-only and does not automatically remove columns. The committed sample describes 205 generated features from synthetic data, not prediction accuracy. Random Forest, XGBoost, time-series models, deep learning, FinBERT and LLM explanations remain planned. Umar will now explain how the backend will expose these capabilities."
+    },
+    {
+      "title": "Objectives and integration contracts",
+      "type": "columns",
+      "leftTitle": "Implemented foundation",
+      "left": [
+        "Yahoo Finance and Alpha Vantage market-data adapters.",
+        "NewsAPI adapter, symbol search and file-based storage.",
+        "Shared feature pipeline with EDA and metadata outputs."
+      ],
+      "rightTitle": "Proposed integration",
+      "right": [
+        "Backend loads trained artifacts and calls inference functions.",
+        "Decision engine combines forecasts, sentiment and risk.",
+        "LLM explains structured decisions without generating its own signal."
+      ],
+      "note": "Module responsibility describes the team assignment. It does not establish individual commit authorship.",
+      "src": [
+        "ai/data_collection/manager.py",
+        "docs/architecture/ARCHITECTURE.md"
+      ],
+      "script": "My responsibility is backend development. The integration objective is to connect the implemented data pipeline to a serving layer without moving training logic into API routes. DataCollectionManager already hides provider-specific calls behind a common interface. The planned backend should orchestrate inference using trained artifacts. Later, the decision engine will combine predictions, sentiment and risk into a structured result. The architecture limits the LLM to explaining that result. It must not create an independent price prediction or trading signal. These are documented integration contracts, and most still require implementation."
+    },
+    {
+      "title": "High-level system architecture",
+      "type": "architecture",
+      "src": [
+        "docs/architecture/ARCHITECTURE.md",
+        "ai/data_collection/manager.py",
+        "backend/app/main.py"
+      ],
+      "script": "The architecture separates offline data preparation and model development from online serving. The solid data-preparation component already includes provider adapters and feature engineering. It writes local raw data, processed features and reports. Predictive models, FinBERT, the decision engine and the LLM layer remain planned. The backend should load versioned model artifacts and orchestrate inference, while the React client should only consume the API. PostgreSQL is intended for durable application records and Redis for optional caching. Both have infrastructure configuration, but application integration is absent. These boundaries support independent testing and later deployment without mixing model training into request handlers."
+    },
+    {
+      "title": "Backend module and API boundary",
+      "type": "columns",
+      "leftTitle": "Source code present",
+      "left": [
+        "FastAPI app factory and versioned APIRouter.",
+        "GET /api/v1/health returns {\"status\":\"ok\"}.",
+        "Pydantic Settings loads environment configuration."
+      ],
+      "rightTitle": "Remaining backend work",
+      "right": [
+        "Implement auth routes and JWT verification.",
+        "Define request / response schemas and analysis services.",
+        "Wire SQLAlchemy sessions, persistence and AI inference."
+      ],
+      "note": "Health route checks API liveness only. It does not verify database readiness or model availability.",
+      "src": [
+        "backend/app/main.py",
+        "backend/app/api/v1/router.py",
+        "backend/app/api/v1/endpoints/health.py",
+        "backend/app/core/config.py"
+      ],
+      "script": "The FastAPI app uses an app factory and mounts a versioned router. Its only implemented endpoint is GET slash api slash v1 slash health, which returns status ok. Pydantic Settings centralizes configuration, including database and JWT settings. Configuration fields do not establish working authentication or database integration. The models, schemas, database and services directories are placeholders. Request validation, JWT verification, analysis routes and SQLAlchemy sessions still need implementation. The health route demonstrates liveness, not dependency readiness. Nooh will now cover the frontend and the planned client-server interaction."
+    },
+    {
+      "title": "Technology stack and implementation status",
+      "type": "stack",
+      "rows": [
+        [
+          "Frontend",
+          "React 18, Vite, Tailwind",
+          "Scaffold"
+        ],
+        [
+          "Client libraries",
+          "Router, Axios, Chart.js, Recharts",
+          "Dependencies only"
+        ],
+        [
+          "Backend",
+          "FastAPI, Pydantic Settings",
+          "App + health route"
+        ],
+        [
+          "Data / features",
+          "pandas, NumPy, yfinance, requests",
+          "Implementation present"
+        ],
+        [
+          "Persistence",
+          "PostgreSQL 16, Redis 7, SQLAlchemy",
+          "Compose / dependencies"
+        ],
+        [
+          "Predictive AI",
+          "scikit-learn, XGBoost, statsmodels, Prophet",
+          "Planned modules"
+        ],
+        [
+          "NLP / explanations",
+          "FinBERT, Gemini / Groq / OpenRouter",
+          "Planned modules"
+        ],
+        [
+          "Delivery",
+          "Docker, Compose, GitHub Actions, Nginx",
+          "Configuration present"
+        ]
+      ],
+      "note": "Deep learning framework choice remains open: TensorFlow or PyTorch. Deployment success has not been verified.",
+      "src": [
+        "frontend/package.json",
+        "backend/requirements.txt",
+        "ai/requirements.txt",
+        "docker-compose.yml",
+        "docs/architecture/ARCHITECTURE.md"
+      ],
+      "script": "My responsibility is frontend development. This stack slide separates active source code from installed or declared dependencies. React, Vite and Tailwind support the current placeholder application. Router, Axios and both chart libraries appear in package.json, but the current App component does not use them. FastAPI provides the app and health route. The substantial implemented analytical code uses pandas and NumPy. PostgreSQL, Redis and deployment tools have configuration, while the predictive and language-model modules remain planned. The deep learning framework is still an open architecture choice, so we should not claim that both frameworks are integrated."
+    },
+    {
+      "title": "Frontend module and component structure",
+      "type": "columns",
+      "leftTitle": "Current React scaffold",
+      "left": [
+        "main.jsx mounts the root App component.",
+        "App.jsx renders a project title and scaffold message.",
+        "Component, page, route and service folders are placeholders."
+      ],
+      "rightTitle": "Planned dashboard structure",
+      "right": [
+        "Search and select a ticker, then request analysis.",
+        "Render price history with Chart.js or Recharts.",
+        "Show forecast uncertainty, sentiment and explanation with source context."
+      ],
+      "note": "No completed dashboard, authentication pages, live charts or Axios service integration appear in the supplied source.",
+      "src": [
+        "frontend/src/main.jsx",
+        "frontend/src/App.jsx",
+        "frontend/package.json",
+        "docs/architecture/ARCHITECTURE.md"
+      ],
+      "script": "The frontend starts in main.jsx and renders App.jsx. The current App displays the project name and a scaffold message. The source includes empty directories for components, pages, context, hooks, routes and services. A planned dashboard would separate ticker selection, chart rendering and analysis results into reusable components. Axios would handle API requests and React Router would manage page navigation. Chart.js and Recharts are available dependencies, but no financial chart component is implemented. We therefore present the interface structure as a development plan rather than a completed dashboard."
+    },
+    {
+      "title": "Frontend–backend communication",
+      "type": "communication",
+      "src": [
+        "frontend/src/App.jsx",
+        "backend/app/api/v1/router.py",
+        "docs/architecture/ARCHITECTURE.md"
+      ],
+      "script": "The upper path shows the implemented backend route: an HTTP client can request the health endpoint and receive a small JSON response. The React App does not currently call it. The lower path describes the intended analysis interaction: a dashboard sends a ticker to the planned analysis endpoint, FastAPI invokes a service, and the service returns a structured decision with explanations and uncertainty. The client must eventually handle loading, empty results and provider errors. This is a proposed contract, not an existing endpoint. Salma will now explain persistence, workflow and technical reliability."
+    },
+    {
+      "title": "Database module and proposed data model",
+      "type": "database",
+      "src": [
+        "docs/architecture/ARCHITECTURE.md",
+        "backend/app/db/__init__.py",
+        "docker-compose.yml"
+      ],
+      "script": "My assigned responsibility is database management and design. Compose defines PostgreSQL 16 with a persistent volume and Redis 7. However, the database and models folders contain no implemented ORM classes, session factory or migrations. The diagram is a proposed subset of the documented entities. A ticker could relate to price points and predictions. A model run would identify the artifact behind a prediction. News articles could produce sentiment scores, and a decision would reference evidence from predictions and sentiment. Exact keys, cardinalities, constraints and migration strategy still need formal schema design."
+    },
+    {
+      "title": "End-to-end workflow and storage",
+      "type": "workflow",
+      "src": [
+        "ai/data_collection/storage.py",
+        "ai/feature_engineering/storage.py",
+        "docs/architecture/ARCHITECTURE.md"
+      ],
+      "script": "The current workflow can collect market data into local files and transform raw OHLCV into processed features and documentation. Reports include data-quality summaries and feature metadata. The future application extends that path with trained model inference, news sentiment, a decision object and an LLM explanation. The backend would persist results and send them to the React dashboard. Redis is intended as an optional cache or queue component, but the existing utility cache is file-based. This distinction matters because a configured Redis container does not prove that the application uses Redis."
+    },
+    {
+      "title": "Security, reliability and evaluation",
+      "type": "columns",
+      "leftTitle": "Evidence in the repository",
+      "left": [
+        "Provider exceptions, retry utilities and logging.",
+        "Offline AI test files and a backend health test.",
+        "CI definitions for backend, AI and frontend checks."
+      ],
+      "rightTitle": "Production requirements",
+      "right": [
+        "JWT enforcement, explicit CORS origins and secret rotation.",
+        "Chronological model evaluation and leakage-safe features.",
+        "Validated schemas, dependency readiness and monitoring."
+      ],
+      "note": "Educational / research use only. No financial advice. No test-pass count, live deployment or forecast benchmark is claimed.",
+      "src": [
+        ".github/workflows/ci.yml",
+        "ai/tests/test_feature_engineering.py",
+        "ai/feature_engineering/features/price_action.py",
+        "ai/feature_engineering/features/target.py",
+        "backend/app/main.py"
+      ],
+      "script": "Reliability support includes provider error types, retry utilities, logging and test files. CI configuration exists, but this review does not establish a successful CI run or a deployed system. Security work remains: JWT configuration needs actual enforcement, debug CORS needs explicit production origins, and placeholder secrets must be replaced. Future model evaluation must use chronological splits and prevent target leakage. Swing features use centered windows and require future-bar confirmation, so they need lagging or exclusion for live use. Prediction responses must eventually enforce the educational disclaimer in their schemas. Mohammad will close with interface design and the roadmap."
+    },
+    {
+      "title": "UI/UX module and proposed interface",
+      "type": "wireframe",
+      "src": [
+        "frontend/src/App.jsx",
+        "docs/architecture/ARCHITECTURE.md"
+      ],
+      "script": "My responsibility is UI and UX design. This wireframe is a conceptual proposal, not a screenshot of the current application. The user journey begins with ticker selection, followed by a view of data freshness and historical prices. Forecasts and sentiment should remain distinct so users can understand their evidence and uncertainty. Explanations should identify supporting drivers and limitations. Planned accessibility work includes keyboard navigation, visible focus, readable contrast, labeled charts and status messages that do not rely only on color. The current interface only renders the scaffold page, so these usability goals still require implementation and testing."
+    },
+    {
+      "title": "Project status and next milestones",
+      "type": "columns",
+      "leftTitle": "Current evidence",
+      "left": [
+        "Implemented: data collection and feature engineering source.",
+        "Scaffolded: FastAPI app, React entry page and deployment configuration.",
+        "Sample: synthetic 300-day input, with documented feature outputs."
+      ],
+      "rightTitle": "Next development milestones",
+      "right": [
+        "Formalize schema, migrations and backend contracts.",
+        "Train leakage-safe baselines and evaluate chronologically.",
+        "Integrate sentiment, explanations and dashboard, then verify deployment."
+      ],
+      "note": "Main README still says “scaffolding only”. Sprint 2 source and module documentation show later progress.",
+      "src": [
+        "README.md",
+        "ai/feature_engineering/README.md",
+        "docs/sprint2_sample_output/README.md",
+        "docs/architecture/ARCHITECTURE.md"
+      ],
+      "script": "The strongest completed foundation is the data pipeline. The backend, frontend and deployment files establish structure, while the core analysis application remains under development. The committed sample uses 300 synthetic trading days and demonstrates output structure, not real-market forecasting performance. The main README still describes an earlier scaffolding phase, so the module code and Sprint 2 documentation provide a more precise status. Next priorities are schema and API implementation, leakage-safe model baselines, and then sentiment and dashboard integration. Production readiness will require successful tests, provider validation, observability and an end-to-end deployment review."
+    },
+    {
+      "title": "Team responsibilities and Q&A",
+      "type": "team",
+      "src": [
+        "README.md"
+      ],
+      "script": "To conclude, this project establishes a documented architecture and an implemented data-preparation foundation for financial decision support. Shadab covers AI and machine learning, Umar the backend, Nooh the frontend, Salma database management and design, and I cover UI and UX. These are our assigned responsibilities, not claims about verified individual code authorship. The next goal is to connect these areas through tested data and API contracts. The project is educational and does not provide financial advice. Thank you. We welcome questions on the implemented pipeline, proposed integration, current limitations and development roadmap."
+    }
+  ]
+}

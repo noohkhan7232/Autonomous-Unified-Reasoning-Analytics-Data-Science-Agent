@@ -1,0 +1,3011 @@
+{
+  "ticker": "SAMPLE",
+  "version": "sample",
+  "features": [
+    {
+      "name": "daily_return",
+      "group": "price",
+      "formula": "Close(t) - Close(t-1)",
+      "meaning": "Absolute day-over-day price change.",
+      "interpretation": "Positive = price rose today; negative = price fell.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Time Series"
+      ],
+      "advantages": "Simple, interpretable.",
+      "limitations": "Not scale-invariant across tickers/time \u2014 use pct_return for comparisons.",
+      "when_to_use": "Feature for models trained on a single ticker over a stable price range."
+    },
+    {
+      "name": "pct_return",
+      "group": "price",
+      "formula": "(Close(t) - Close(t-1)) / Close(t-1)",
+      "meaning": "Percentage day-over-day return.",
+      "interpretation": "Scale-invariant version of daily_return; comparable across tickers/time.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Time Series",
+        "Deep Learning"
+      ],
+      "advantages": "Stationary-ish, comparable across price levels.",
+      "limitations": "Can be noisy for low-priced/illiquid tickers.",
+      "when_to_use": "Default target/feature basis for return-based modeling."
+    },
+    {
+      "name": "log_return",
+      "group": "price",
+      "formula": "ln(Close(t) / Close(t-1))",
+      "meaning": "Log return; approximately additive over time (log_return sums across days approximate the multi-day log return).",
+      "interpretation": "Near-zero = flat; symmetric around 0 for up/down moves of similar magnitude.",
+      "priority": "High",
+      "recommended_for": [
+        "Time Series",
+        "Deep Learning"
+      ],
+      "advantages": "Time-additive, closer to normally distributed than raw pct returns; preferred by ARIMA/DL.",
+      "limitations": "Less intuitive to read directly than pct_return.",
+      "when_to_use": "Time series models (ARIMA/SARIMA) and DL sequence inputs."
+    },
+    {
+      "name": "price_diff",
+      "group": "price",
+      "formula": "Close - Open",
+      "meaning": "Intraday price change.",
+      "interpretation": "Positive = the session closed above where it opened (net buying pressure that day).",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "open_close_diff",
+      "group": "price",
+      "formula": "Close - Open",
+      "meaning": "Alias of price_diff, kept as a distinct named column per spec for readability in reports.",
+      "interpretation": "Same as price_diff.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "high_low_diff",
+      "group": "price",
+      "formula": "High - Low",
+      "meaning": "Intraday trading range (absolute).",
+      "interpretation": "Larger values indicate a more volatile session.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Cheap proxy for intraday volatility alongside ATR."
+    },
+    {
+      "name": "typical_price",
+      "group": "price",
+      "formula": "(High + Low + Close) / 3",
+      "meaning": "A single representative price for the session, weighting close, high and low equally.",
+      "interpretation": "Commonly used as the input series for VWAP/CCI-style indicators.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Time Series"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "median_price",
+      "group": "price",
+      "formula": "(High + Low) / 2",
+      "meaning": "Midpoint of the day's range, ignoring open/close.",
+      "interpretation": "A smoother range-center reference than close alone.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "weighted_close",
+      "group": "price",
+      "formula": "(High + Low + 2*Close) / 4",
+      "meaning": "Typical price with double weight on the close.",
+      "interpretation": "Emphasizes the closing price, which usually carries the most information.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "sma_5",
+      "group": "trend",
+      "formula": "mean(Close, last 5 days)",
+      "meaning": "5-day Simple Moving Average.",
+      "interpretation": "Price above SMA = uptrend bias; below = downtrend bias. Longer windows = smoother, laggier.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Time Series",
+        "Decision Engine"
+      ],
+      "advantages": "Simple, robust, widely understood baseline trend measure.",
+      "limitations": "Lags price by ~2 days; whipsaws in sideways markets.",
+      "when_to_use": "Trend-following features, crossover signals (see golden_cross/death_cross)."
+    },
+    {
+      "name": "sma_10",
+      "group": "trend",
+      "formula": "mean(Close, last 10 days)",
+      "meaning": "10-day Simple Moving Average.",
+      "interpretation": "Price above SMA = uptrend bias; below = downtrend bias. Longer windows = smoother, laggier.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Time Series",
+        "Decision Engine"
+      ],
+      "advantages": "Simple, robust, widely understood baseline trend measure.",
+      "limitations": "Lags price by ~5 days; whipsaws in sideways markets.",
+      "when_to_use": "Trend-following features, crossover signals (see golden_cross/death_cross)."
+    },
+    {
+      "name": "sma_20",
+      "group": "trend",
+      "formula": "mean(Close, last 20 days)",
+      "meaning": "20-day Simple Moving Average.",
+      "interpretation": "Price above SMA = uptrend bias; below = downtrend bias. Longer windows = smoother, laggier.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Time Series",
+        "Decision Engine"
+      ],
+      "advantages": "Simple, robust, widely understood baseline trend measure.",
+      "limitations": "Lags price by ~10 days; whipsaws in sideways markets.",
+      "when_to_use": "Trend-following features, crossover signals (see golden_cross/death_cross)."
+    },
+    {
+      "name": "sma_50",
+      "group": "trend",
+      "formula": "mean(Close, last 50 days)",
+      "meaning": "50-day Simple Moving Average.",
+      "interpretation": "Price above SMA = uptrend bias; below = downtrend bias. Longer windows = smoother, laggier.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Time Series",
+        "Decision Engine"
+      ],
+      "advantages": "Simple, robust, widely understood baseline trend measure.",
+      "limitations": "Lags price by ~25 days; whipsaws in sideways markets.",
+      "when_to_use": "Trend-following features, crossover signals (see golden_cross/death_cross)."
+    },
+    {
+      "name": "sma_100",
+      "group": "trend",
+      "formula": "mean(Close, last 100 days)",
+      "meaning": "100-day Simple Moving Average.",
+      "interpretation": "Price above SMA = uptrend bias; below = downtrend bias. Longer windows = smoother, laggier.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Time Series",
+        "Decision Engine"
+      ],
+      "advantages": "Simple, robust, widely understood baseline trend measure.",
+      "limitations": "Lags price by ~50 days; whipsaws in sideways markets.",
+      "when_to_use": "Trend-following features, crossover signals (see golden_cross/death_cross)."
+    },
+    {
+      "name": "sma_200",
+      "group": "trend",
+      "formula": "mean(Close, last 200 days)",
+      "meaning": "200-day Simple Moving Average.",
+      "interpretation": "Price above SMA = uptrend bias; below = downtrend bias. Longer windows = smoother, laggier.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Time Series",
+        "Decision Engine"
+      ],
+      "advantages": "Simple, robust, widely understood baseline trend measure.",
+      "limitations": "Lags price by ~100 days; whipsaws in sideways markets.",
+      "when_to_use": "Trend-following features, crossover signals (see golden_cross/death_cross)."
+    },
+    {
+      "name": "ema_5",
+      "group": "trend",
+      "formula": "EWMA(Close, span=5)",
+      "meaning": "5-day Exponential Moving Average.",
+      "interpretation": "Reacts faster to recent price changes than the equivalent SMA.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Deep Learning",
+        "Decision Engine"
+      ],
+      "advantages": "More responsive to new information than SMA; underlies MACD.",
+      "limitations": "More sensitive to short-term noise/whipsaws than SMA.",
+      "when_to_use": "Faster trend signal, or as an input to MACD-style features."
+    },
+    {
+      "name": "ema_10",
+      "group": "trend",
+      "formula": "EWMA(Close, span=10)",
+      "meaning": "10-day Exponential Moving Average.",
+      "interpretation": "Reacts faster to recent price changes than the equivalent SMA.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Deep Learning",
+        "Decision Engine"
+      ],
+      "advantages": "More responsive to new information than SMA; underlies MACD.",
+      "limitations": "More sensitive to short-term noise/whipsaws than SMA.",
+      "when_to_use": "Faster trend signal, or as an input to MACD-style features."
+    },
+    {
+      "name": "ema_20",
+      "group": "trend",
+      "formula": "EWMA(Close, span=20)",
+      "meaning": "20-day Exponential Moving Average.",
+      "interpretation": "Reacts faster to recent price changes than the equivalent SMA.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Deep Learning",
+        "Decision Engine"
+      ],
+      "advantages": "More responsive to new information than SMA; underlies MACD.",
+      "limitations": "More sensitive to short-term noise/whipsaws than SMA.",
+      "when_to_use": "Faster trend signal, or as an input to MACD-style features."
+    },
+    {
+      "name": "ema_50",
+      "group": "trend",
+      "formula": "EWMA(Close, span=50)",
+      "meaning": "50-day Exponential Moving Average.",
+      "interpretation": "Reacts faster to recent price changes than the equivalent SMA.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Deep Learning",
+        "Decision Engine"
+      ],
+      "advantages": "More responsive to new information than SMA; underlies MACD.",
+      "limitations": "More sensitive to short-term noise/whipsaws than SMA.",
+      "when_to_use": "Faster trend signal, or as an input to MACD-style features."
+    },
+    {
+      "name": "ema_100",
+      "group": "trend",
+      "formula": "EWMA(Close, span=100)",
+      "meaning": "100-day Exponential Moving Average.",
+      "interpretation": "Reacts faster to recent price changes than the equivalent SMA.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Deep Learning",
+        "Decision Engine"
+      ],
+      "advantages": "More responsive to new information than SMA; underlies MACD.",
+      "limitations": "More sensitive to short-term noise/whipsaws than SMA.",
+      "when_to_use": "Faster trend signal, or as an input to MACD-style features."
+    },
+    {
+      "name": "ema_200",
+      "group": "trend",
+      "formula": "EWMA(Close, span=200)",
+      "meaning": "200-day Exponential Moving Average.",
+      "interpretation": "Reacts faster to recent price changes than the equivalent SMA.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Deep Learning",
+        "Decision Engine"
+      ],
+      "advantages": "More responsive to new information than SMA; underlies MACD.",
+      "limitations": "More sensitive to short-term noise/whipsaws than SMA.",
+      "when_to_use": "Faster trend signal, or as an input to MACD-style features."
+    },
+    {
+      "name": "golden_cross",
+      "group": "trend",
+      "formula": "sma_50 crosses above sma_200",
+      "meaning": "Bullish long-term trend-change signal (classically 50-day crossing above 200-day).",
+      "interpretation": "True on the single day the fast SMA first exceeds the slow SMA.",
+      "priority": "High",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "Well-known, widely referenced signal; easy to explain to end users.",
+      "limitations": "Lagging by construction (needs the crossover to already happen); frequent false signals in choppy markets.",
+      "when_to_use": "Long-horizon regime/trend-change feature, not short-term timing."
+    },
+    {
+      "name": "death_cross",
+      "group": "trend",
+      "formula": "sma_50 crosses below sma_200",
+      "meaning": "Bearish long-term trend-change signal.",
+      "interpretation": "True on the single day the fast SMA first drops below the slow SMA.",
+      "priority": "High",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Same lag/false-signal caveats as golden_cross.",
+      "when_to_use": "Long-horizon regime/trend-change feature."
+    },
+    {
+      "name": "rsi",
+      "group": "momentum",
+      "formula": "100 - 100/(1 + RS), RS = Wilder-smoothed avg gain / avg loss over 14 days",
+      "meaning": "Relative Strength Index \u2014 bounded 0-100 momentum oscillator.",
+      "interpretation": "Traditionally >70 = overbought, <30 = oversold; divergence from price can signal reversals.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "Bounded scale makes it comparable across tickers/time; well-studied.",
+      "limitations": "Can stay 'overbought'/'oversold' for extended periods in strong trends (false signals).",
+      "when_to_use": "Overbought/oversold screening; confirming momentum alongside MACD."
+    },
+    {
+      "name": "roc",
+      "group": "momentum",
+      "formula": "(Close(t) - Close(t-12)) / Close(t-12) * 100",
+      "meaning": "Rate of Change \u2014 percentage price change over the lookback period.",
+      "interpretation": "Positive and rising = accelerating upward momentum.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Time Series"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Momentum feature comparable in scale across tickers."
+    },
+    {
+      "name": "momentum",
+      "group": "momentum",
+      "formula": "Close(t) - Close(t-10)",
+      "meaning": "Absolute price momentum over the lookback period.",
+      "interpretation": "Magnitude and direction of the recent price move.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Not scale-invariant across tickers \u2014 prefer roc/price_momentum for cross-ticker models.",
+      "when_to_use": ""
+    },
+    {
+      "name": "price_momentum",
+      "group": "momentum",
+      "formula": "pct_change(Close, 10)",
+      "meaning": "Percentage version of `momentum`.",
+      "interpretation": "Scale-invariant momentum measure.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Deep Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "volume_momentum",
+      "group": "momentum",
+      "formula": "Volume(t) - Volume(t-10)",
+      "meaning": "Change in trading volume over the lookback period.",
+      "interpretation": "Rising volume momentum alongside price momentum supports trend conviction.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Confirming price moves with participation (volume) \u2014 see also breakout features."
+    },
+    {
+      "name": "true_range",
+      "group": "volatility",
+      "formula": "max(High-Low, |High-PrevClose|, |Low-PrevClose|)",
+      "meaning": "The full price range a bar covered, including any gap from the prior close.",
+      "interpretation": "Larger values indicate a more volatile session, including overnight gaps.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Building block for ATR; on its own, a per-bar volatility snapshot."
+    },
+    {
+      "name": "atr",
+      "group": "volatility",
+      "formula": "Wilder EMA(true_range, period=14)",
+      "meaning": "Average True Range \u2014 smoothed measure of typical daily trading range.",
+      "interpretation": "Rising ATR = expanding volatility regime; commonly used to size stop-losses.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "Captures gap risk (unlike a plain High-Low range); industry-standard.",
+      "limitations": "Lagging (smoothed); doesn't indicate direction, only magnitude.",
+      "when_to_use": "Risk/position-sizing features, volatility-regime detection."
+    },
+    {
+      "name": "historical_volatility",
+      "group": "volatility",
+      "formula": "std(log_return, 20d) * sqrt(252)",
+      "meaning": "Annualized historical volatility from log returns.",
+      "interpretation": "Directly comparable across tickers and to option-implied volatility.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine",
+        "Time Series"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Risk scoring, cross-ticker volatility comparison."
+    },
+    {
+      "name": "rolling_volatility_10",
+      "group": "volatility",
+      "formula": "std(pct_return, last 10 days)",
+      "meaning": "10-day rolling standard deviation of daily percentage returns.",
+      "interpretation": "Higher = choppier recent price action.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Deep Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "rolling_volatility_20",
+      "group": "volatility",
+      "formula": "std(pct_return, last 20 days)",
+      "meaning": "20-day rolling standard deviation of daily percentage returns.",
+      "interpretation": "Higher = choppier recent price action.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Deep Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "rolling_volatility_30",
+      "group": "volatility",
+      "formula": "std(pct_return, last 30 days)",
+      "meaning": "30-day rolling standard deviation of daily percentage returns.",
+      "interpretation": "Higher = choppier recent price action.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Deep Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "std_10",
+      "group": "volatility",
+      "formula": "std(Close, last 10 days)",
+      "meaning": "10-day rolling standard deviation of raw closing price.",
+      "interpretation": "Price-level dependent (not scale-invariant) \u2014 prefer rolling_volatility_* for cross-ticker comparisons.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Scale depends on the ticker's price level.",
+      "when_to_use": ""
+    },
+    {
+      "name": "variance_10",
+      "group": "volatility",
+      "formula": "var(Close, last 10 days)",
+      "meaning": "10-day rolling variance of raw closing price (std_10 squared).",
+      "interpretation": "Same information as std, in squared units.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "std_20",
+      "group": "volatility",
+      "formula": "std(Close, last 20 days)",
+      "meaning": "20-day rolling standard deviation of raw closing price.",
+      "interpretation": "Price-level dependent (not scale-invariant) \u2014 prefer rolling_volatility_* for cross-ticker comparisons.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Scale depends on the ticker's price level.",
+      "when_to_use": ""
+    },
+    {
+      "name": "variance_20",
+      "group": "volatility",
+      "formula": "var(Close, last 20 days)",
+      "meaning": "20-day rolling variance of raw closing price (std_20 squared).",
+      "interpretation": "Same information as std, in squared units.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "bollinger_middle",
+      "group": "bollinger",
+      "formula": "SMA(Close, 20)",
+      "meaning": "Center line of the Bollinger Bands.",
+      "interpretation": "Same as sma_20 by default; the trend baseline the bands are drawn around.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "bollinger_upper",
+      "group": "bollinger",
+      "formula": "middle + 2.0*std(Close, 20)",
+      "meaning": "Upper volatility band.",
+      "interpretation": "Price reaching/exceeding this band suggests a statistically stretched move.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "bollinger_lower",
+      "group": "bollinger",
+      "formula": "middle - 2.0*std(Close, 20)",
+      "meaning": "Lower volatility band.",
+      "interpretation": "Price reaching/exceeding this band suggests a statistically stretched downside move.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "bollinger_bandwidth",
+      "group": "bollinger",
+      "formula": "(upper - lower) / middle",
+      "meaning": "Normalized band width \u2014 a direct volatility measure.",
+      "interpretation": "A tight bandwidth ('squeeze') often precedes a sharp directional move.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Volatility-regime / breakout-anticipation feature."
+    },
+    {
+      "name": "bollinger_percent_b",
+      "group": "bollinger",
+      "formula": "(Close - lower) / (upper - lower)",
+      "meaning": "Where price sits within the bands, normalized 0-1 (can exceed the range on breakouts).",
+      "interpretation": "%B near 1 = near the upper band; near 0 = near the lower band; >1 or <0 = outside the bands.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "Undefined (NaN) when the bands have zero width (flat price); guarded against divide-by-zero.",
+      "when_to_use": ""
+    },
+    {
+      "name": "macd_line",
+      "group": "macd",
+      "formula": "EMA(Close, 12) - EMA(Close, 26)",
+      "meaning": "Difference between the fast and slow EMA.",
+      "interpretation": "Positive = fast EMA above slow EMA (bullish momentum); negative = bearish momentum.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "Combines trend and momentum in one line; widely used and well understood.",
+      "limitations": "Lagging (built from EMAs); less useful in strongly sideways/choppy markets.",
+      "when_to_use": "Trend-momentum confirmation alongside RSI."
+    },
+    {
+      "name": "macd_signal",
+      "group": "macd",
+      "formula": "EMA(macd_line, 9)",
+      "meaning": "Smoothed trigger line for the MACD line.",
+      "interpretation": "Crossovers of macd_line above/below macd_signal are classic buy/sell triggers.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "macd_histogram",
+      "group": "macd",
+      "formula": "macd_line - macd_signal",
+      "meaning": "Distance between the MACD line and its signal line.",
+      "interpretation": "Sign shows which side of the crossover price is on; magnitude shows momentum strength; shrinking histogram often precedes a crossover.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Deep Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Early-warning feature for upcoming MACD crossovers."
+    },
+    {
+      "name": "volume_rolling_mean_10",
+      "group": "volume",
+      "formula": "mean(Volume, last 10 days)",
+      "meaning": "10-day average trading volume.",
+      "interpretation": "Baseline 'normal' volume for the ticker; compare current volume against it.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "volume_rolling_std_10",
+      "group": "volume",
+      "formula": "std(Volume, last 10 days)",
+      "meaning": "10-day volume volatility.",
+      "interpretation": "High values indicate erratic/event-driven trading activity.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "volume_rolling_mean_20",
+      "group": "volume",
+      "formula": "mean(Volume, last 20 days)",
+      "meaning": "20-day average trading volume.",
+      "interpretation": "Baseline 'normal' volume for the ticker; compare current volume against it.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "volume_rolling_std_20",
+      "group": "volume",
+      "formula": "std(Volume, last 20 days)",
+      "meaning": "20-day volume volatility.",
+      "interpretation": "High values indicate erratic/event-driven trading activity.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "volume_change",
+      "group": "volume",
+      "formula": "pct_change(Volume, 1)",
+      "meaning": "Day-over-day percentage change in volume.",
+      "interpretation": "Spikes often coincide with news/earnings events.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "volume_ratio",
+      "group": "volume",
+      "formula": "Volume(t) / volume_rolling_mean_10",
+      "meaning": "Today's volume relative to its recent average.",
+      "interpretation": "Ratio > 1.5-2x is commonly used as a 'high conviction' participation threshold (see breakout features).",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "vwap",
+      "group": "volume",
+      "formula": "cumsum(typical_price * Volume) / cumsum(Volume)",
+      "meaning": "Volume-Weighted Average Price, cumulative from the start of the loaded series.",
+      "interpretation": "Price above VWAP suggests buyers are in control on average; a common institutional execution benchmark.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "Cumulative-from-series-start VWAP is most meaningful intraday; for daily bars, treat it as a long-run reference line rather than a session VWAP.",
+      "when_to_use": "Reference level for whether current price is 'expensive' or 'cheap' relative to volume-weighted history."
+    },
+    {
+      "name": "obv",
+      "group": "volume",
+      "formula": "cumsum(sign(Close change) * Volume)",
+      "meaning": "On-Balance Volume \u2014 running total that adds volume on up days and subtracts it on down days.",
+      "interpretation": "Rising OBV alongside rising price confirms the trend; OBV diverging from price can flag weakening trends.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "A cumulative indicator \u2014 its absolute level is arbitrary; only its slope/divergence from price is meaningful.",
+      "when_to_use": ""
+    },
+    {
+      "name": "rolling_mean_5",
+      "group": "rolling",
+      "formula": "average(Close, last 5 days)",
+      "meaning": "Rolling 5-day average of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_median_5",
+      "group": "rolling",
+      "formula": "median(Close, last 5 days)",
+      "meaning": "Rolling 5-day median of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_max_5",
+      "group": "rolling",
+      "formula": "maximum(Close, last 5 days)",
+      "meaning": "Rolling 5-day maximum of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_min_5",
+      "group": "rolling",
+      "formula": "minimum(Close, last 5 days)",
+      "meaning": "Rolling 5-day minimum of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_std_5",
+      "group": "rolling",
+      "formula": "standard deviation(Close, last 5 days)",
+      "meaning": "Rolling 5-day standard deviation of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_var_5",
+      "group": "rolling",
+      "formula": "variance(Close, last 5 days)",
+      "meaning": "Rolling 5-day variance of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_mean_10",
+      "group": "rolling",
+      "formula": "average(Close, last 10 days)",
+      "meaning": "Rolling 10-day average of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_median_10",
+      "group": "rolling",
+      "formula": "median(Close, last 10 days)",
+      "meaning": "Rolling 10-day median of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_max_10",
+      "group": "rolling",
+      "formula": "maximum(Close, last 10 days)",
+      "meaning": "Rolling 10-day maximum of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_min_10",
+      "group": "rolling",
+      "formula": "minimum(Close, last 10 days)",
+      "meaning": "Rolling 10-day minimum of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_std_10",
+      "group": "rolling",
+      "formula": "standard deviation(Close, last 10 days)",
+      "meaning": "Rolling 10-day standard deviation of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_var_10",
+      "group": "rolling",
+      "formula": "variance(Close, last 10 days)",
+      "meaning": "Rolling 10-day variance of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_mean_20",
+      "group": "rolling",
+      "formula": "average(Close, last 20 days)",
+      "meaning": "Rolling 20-day average of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_median_20",
+      "group": "rolling",
+      "formula": "median(Close, last 20 days)",
+      "meaning": "Rolling 20-day median of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_max_20",
+      "group": "rolling",
+      "formula": "maximum(Close, last 20 days)",
+      "meaning": "Rolling 20-day maximum of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_min_20",
+      "group": "rolling",
+      "formula": "minimum(Close, last 20 days)",
+      "meaning": "Rolling 20-day minimum of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_std_20",
+      "group": "rolling",
+      "formula": "standard deviation(Close, last 20 days)",
+      "meaning": "Rolling 20-day standard deviation of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "rolling_var_20",
+      "group": "rolling",
+      "formula": "variance(Close, last 20 days)",
+      "meaning": "Rolling 20-day variance of closing price.",
+      "interpretation": "General-purpose descriptive statistic; combined with the current close it lets a model infer relative positioning cheaply.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Feed as raw model-agnostic inputs to tree-based ML (Random Forest / XGBoost), which can learn nonlinear combinations on its own."
+    },
+    {
+      "name": "close_lag_1",
+      "group": "lag",
+      "formula": "Close(t - 1)",
+      "meaning": "Close value from 1 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "close_lag_2",
+      "group": "lag",
+      "formula": "Close(t - 2)",
+      "meaning": "Close value from 2 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "close_lag_3",
+      "group": "lag",
+      "formula": "Close(t - 3)",
+      "meaning": "Close value from 3 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "close_lag_5",
+      "group": "lag",
+      "formula": "Close(t - 5)",
+      "meaning": "Close value from 5 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "close_lag_10",
+      "group": "lag",
+      "formula": "Close(t - 10)",
+      "meaning": "Close value from 10 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "close_lag_20",
+      "group": "lag",
+      "formula": "Close(t - 20)",
+      "meaning": "Close value from 20 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "open_lag_1",
+      "group": "lag",
+      "formula": "Open(t - 1)",
+      "meaning": "Open value from 1 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "open_lag_2",
+      "group": "lag",
+      "formula": "Open(t - 2)",
+      "meaning": "Open value from 2 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "open_lag_3",
+      "group": "lag",
+      "formula": "Open(t - 3)",
+      "meaning": "Open value from 3 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "open_lag_5",
+      "group": "lag",
+      "formula": "Open(t - 5)",
+      "meaning": "Open value from 5 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "open_lag_10",
+      "group": "lag",
+      "formula": "Open(t - 10)",
+      "meaning": "Open value from 10 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "open_lag_20",
+      "group": "lag",
+      "formula": "Open(t - 20)",
+      "meaning": "Open value from 20 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "high_lag_1",
+      "group": "lag",
+      "formula": "High(t - 1)",
+      "meaning": "High value from 1 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "high_lag_2",
+      "group": "lag",
+      "formula": "High(t - 2)",
+      "meaning": "High value from 2 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "high_lag_3",
+      "group": "lag",
+      "formula": "High(t - 3)",
+      "meaning": "High value from 3 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "high_lag_5",
+      "group": "lag",
+      "formula": "High(t - 5)",
+      "meaning": "High value from 5 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "high_lag_10",
+      "group": "lag",
+      "formula": "High(t - 10)",
+      "meaning": "High value from 10 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "high_lag_20",
+      "group": "lag",
+      "formula": "High(t - 20)",
+      "meaning": "High value from 20 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "low_lag_1",
+      "group": "lag",
+      "formula": "Low(t - 1)",
+      "meaning": "Low value from 1 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "low_lag_2",
+      "group": "lag",
+      "formula": "Low(t - 2)",
+      "meaning": "Low value from 2 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "low_lag_3",
+      "group": "lag",
+      "formula": "Low(t - 3)",
+      "meaning": "Low value from 3 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "low_lag_5",
+      "group": "lag",
+      "formula": "Low(t - 5)",
+      "meaning": "Low value from 5 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "low_lag_10",
+      "group": "lag",
+      "formula": "Low(t - 10)",
+      "meaning": "Low value from 10 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "low_lag_20",
+      "group": "lag",
+      "formula": "Low(t - 20)",
+      "meaning": "Low value from 20 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "volume_lag_1",
+      "group": "lag",
+      "formula": "Volume(t - 1)",
+      "meaning": "Volume value from 1 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "volume_lag_2",
+      "group": "lag",
+      "formula": "Volume(t - 2)",
+      "meaning": "Volume value from 2 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "volume_lag_3",
+      "group": "lag",
+      "formula": "Volume(t - 3)",
+      "meaning": "Volume value from 3 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "volume_lag_5",
+      "group": "lag",
+      "formula": "Volume(t - 5)",
+      "meaning": "Volume value from 5 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "volume_lag_10",
+      "group": "lag",
+      "formula": "Volume(t - 10)",
+      "meaning": "Volume value from 10 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "volume_lag_20",
+      "group": "lag",
+      "formula": "Volume(t - 20)",
+      "meaning": "Volume value from 20 day(s) ago.",
+      "interpretation": "Gives non-sequential models (e.g. Random Forest) direct access to recent history.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Redundant for LSTM/GRU, which already consume sequences (FR-5.4) \u2014 only needed for non-sequential models.",
+      "when_to_use": "Tabular ML models (Random Forest, XGBoost, Linear Regression)."
+    },
+    {
+      "name": "return_lag_1",
+      "group": "lag",
+      "formula": "pct_return(t - 1)",
+      "meaning": "Percentage return from 1 day(s) ago.",
+      "interpretation": "Lets a model see recent return momentum/mean-reversion patterns directly.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "return_lag_2",
+      "group": "lag",
+      "formula": "pct_return(t - 2)",
+      "meaning": "Percentage return from 2 day(s) ago.",
+      "interpretation": "Lets a model see recent return momentum/mean-reversion patterns directly.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "return_lag_3",
+      "group": "lag",
+      "formula": "pct_return(t - 3)",
+      "meaning": "Percentage return from 3 day(s) ago.",
+      "interpretation": "Lets a model see recent return momentum/mean-reversion patterns directly.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "return_lag_5",
+      "group": "lag",
+      "formula": "pct_return(t - 5)",
+      "meaning": "Percentage return from 5 day(s) ago.",
+      "interpretation": "Lets a model see recent return momentum/mean-reversion patterns directly.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "return_lag_10",
+      "group": "lag",
+      "formula": "pct_return(t - 10)",
+      "meaning": "Percentage return from 10 day(s) ago.",
+      "interpretation": "Lets a model see recent return momentum/mean-reversion patterns directly.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "return_lag_20",
+      "group": "lag",
+      "formula": "pct_return(t - 20)",
+      "meaning": "Percentage return from 20 day(s) ago.",
+      "interpretation": "Lets a model see recent return momentum/mean-reversion patterns directly.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "year",
+      "group": "date",
+      "formula": "Date.year",
+      "meaning": "Calendar year.",
+      "interpretation": "Lets a model learn long-run/macro regime effects.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "quarter",
+      "group": "date",
+      "formula": "Date.quarter",
+      "meaning": "Calendar quarter (1-4).",
+      "interpretation": "Captures earnings-season/quarter-end effects.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "month",
+      "group": "date",
+      "formula": "Date.month",
+      "meaning": "Calendar month (1-12).",
+      "interpretation": "Captures seasonal patterns (e.g. 'January effect').",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "week",
+      "group": "date",
+      "formula": "Date.isocalendar().week",
+      "meaning": "ISO calendar week number.",
+      "interpretation": "Finer-grained seasonality than month.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "day",
+      "group": "date",
+      "formula": "Date.day",
+      "meaning": "Day of month (1-31).",
+      "interpretation": "Captures monthly cyclicality (e.g. payday effects).",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "day_of_week",
+      "group": "date",
+      "formula": "Date.dayofweek (0=Mon)",
+      "meaning": "Day of the trading week.",
+      "interpretation": "Captures day-of-week effects (e.g. 'Monday effect').",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "is_month_end",
+      "group": "date",
+      "formula": "Date.is_month_end",
+      "meaning": "True on the last calendar day of the month.",
+      "interpretation": "Flags potential month-end rebalancing flow.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "is_month_start",
+      "group": "date",
+      "formula": "Date.is_month_start",
+      "meaning": "True on the first calendar day of the month.",
+      "interpretation": "Flags potential start-of-month flow.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "is_quarter_end",
+      "group": "date",
+      "formula": "Date.is_quarter_end",
+      "meaning": "True on the last calendar day of the quarter.",
+      "interpretation": "Flags potential quarter-end/earnings-adjacent effects.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "higher_high",
+      "group": "price_action",
+      "formula": "High(t) > High(t-1)",
+      "meaning": "Today's high exceeded yesterday's high.",
+      "interpretation": "Building block of uptrend structure.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "higher_low",
+      "group": "price_action",
+      "formula": "Low(t) > Low(t-1)",
+      "meaning": "Today's low exceeded yesterday's low.",
+      "interpretation": "Building block of uptrend structure.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "lower_high",
+      "group": "price_action",
+      "formula": "High(t) < High(t-1)",
+      "meaning": "Today's high is below yesterday's high.",
+      "interpretation": "Building block of downtrend structure.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "lower_low",
+      "group": "price_action",
+      "formula": "Low(t) < Low(t-1)",
+      "meaning": "Today's low is below yesterday's low.",
+      "interpretation": "Building block of downtrend structure.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "inside_bar",
+      "group": "price_action",
+      "formula": "High(t)<High(t-1) and Low(t)>Low(t-1)",
+      "meaning": "Today's range is fully contained within yesterday's range.",
+      "interpretation": "Often signals consolidation/indecision before a breakout.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "outside_bar",
+      "group": "price_action",
+      "formula": "High(t)>High(t-1) and Low(t)<Low(t-1)",
+      "meaning": "Today's range fully engulfs yesterday's range.",
+      "interpretation": "Signals a volatility expansion / potential reversal bar.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "is_doji",
+      "group": "price_action",
+      "formula": "|Close-Open| <= 10% of (High-Low)",
+      "meaning": "Open and close are nearly equal.",
+      "interpretation": "Indecision; often precedes a reversal, especially after a strong trend.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "is_bullish_engulfing",
+      "group": "price_action",
+      "formula": "Bearish candle followed by a bullish candle whose body engulfs it",
+      "meaning": "Two-candle bullish reversal pattern.",
+      "interpretation": "Stronger when it occurs after a downtrend / at support.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "is_bearish_engulfing",
+      "group": "price_action",
+      "formula": "Bullish candle followed by a bearish candle whose body engulfs it",
+      "meaning": "Two-candle bearish reversal pattern.",
+      "interpretation": "Stronger when it occurs after an uptrend / at resistance.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "is_pin_bar",
+      "group": "price_action",
+      "formula": "One wick >= 2x body and the opposite wick <= body",
+      "meaning": "Long single-sided wick, small body/opposite wick.",
+      "interpretation": "Rejection of price at the wick's extreme; potential reversal.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "is_hammer",
+      "group": "price_action",
+      "formula": "Long lower wick >= 2x body, small/no upper wick",
+      "meaning": "Bullish reversal candle after a decline.",
+      "interpretation": "Buyers rejected lower prices within the session.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "is_shooting_star",
+      "group": "price_action",
+      "formula": "Long upper wick >= 2x body, small/no lower wick",
+      "meaning": "Bearish reversal candle after an advance.",
+      "interpretation": "Sellers rejected higher prices within the session.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "is_marubozu",
+      "group": "price_action",
+      "formula": "Wicks <= 5% of the candle's range on both ends",
+      "meaning": "Full-bodied candle with virtually no wicks.",
+      "interpretation": "Strong one-sided conviction for the full session.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "trend_strength",
+      "group": "price_action",
+      "formula": "sign(Close-Open) * body / (High-Low)",
+      "meaning": "Signed fraction of the day's range captured by the candle body.",
+      "interpretation": "Near +1/-1 = strong directional conviction; near 0 = indecisive session.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "swing_high",
+      "group": "price_action",
+      "formula": "High(t) is the max High within +/-5 bars",
+      "meaning": "Local price peak (fractal high).",
+      "interpretation": "Used as pivot points for support/resistance and structure features.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "Repaints: only confirmed once the trailing lookback window of future bars exists.",
+      "when_to_use": "Offline feature engineering / backtesting, not real-time signal generation without an added lag."
+    },
+    {
+      "name": "swing_low",
+      "group": "price_action",
+      "formula": "Low(t) is the min Low within +/-5 bars",
+      "meaning": "Local price trough (fractal low).",
+      "interpretation": "Used as pivot points for support/resistance and structure features.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "Repaints (see swing_high).",
+      "when_to_use": "Offline feature engineering / backtesting."
+    },
+    {
+      "name": "break_of_structure_up",
+      "group": "price_action",
+      "formula": "Close(t) > most recent confirmed swing_high",
+      "meaning": "Price broke above the last significant swing high.",
+      "interpretation": "Continuation signal in an uptrend.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "break_of_structure_down",
+      "group": "price_action",
+      "formula": "Close(t) < most recent confirmed swing_low",
+      "meaning": "Price broke below the last significant swing low.",
+      "interpretation": "Continuation signal in a downtrend.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "change_of_character",
+      "group": "price_action",
+      "formula": "A break-of-structure opposite to the prevailing BOS direction",
+      "meaning": "First structural break against the prevailing trend.",
+      "interpretation": "Early warning of a potential trend reversal.",
+      "priority": "High",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "price_action_label",
+      "group": "price_action",
+      "formula": "first matching candlestick pattern in priority order, else 'None'",
+      "meaning": "Single human-readable label summarizing today's candlestick pattern.",
+      "interpretation": "Convenience categorical for reports/dashboards; the underlying boolean columns are more precise for modeling.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "static_support",
+      "group": "support_resistance",
+      "formula": "min(Low, last 20 days)",
+      "meaning": "Simple rolling floor of recent price action.",
+      "interpretation": "A break below this level suggests the recent trading range has failed.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "static_resistance",
+      "group": "support_resistance",
+      "formula": "max(High, last 20 days)",
+      "meaning": "Simple rolling ceiling of recent price action.",
+      "interpretation": "A break above this level suggests the recent trading range has failed to the upside.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "dynamic_support",
+      "group": "support_resistance",
+      "formula": "Price of the most recent confirmed swing_low",
+      "meaning": "Structure-based (fractal) support level.",
+      "interpretation": "More reactive than static_support to the most recent meaningful pivot.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "dynamic_resistance",
+      "group": "support_resistance",
+      "formula": "Price of the most recent confirmed swing_high",
+      "meaning": "Structure-based (fractal) resistance level.",
+      "interpretation": "More reactive than static_resistance to the most recent meaningful pivot.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "nearest_support",
+      "group": "support_resistance",
+      "formula": "= dynamic_support",
+      "meaning": "Alias exposed under the spec's requested column name.",
+      "interpretation": "See dynamic_support.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "nearest_resistance",
+      "group": "support_resistance",
+      "formula": "= dynamic_resistance",
+      "meaning": "Alias exposed under the spec's requested column name.",
+      "interpretation": "See dynamic_resistance.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "support_distance",
+      "group": "support_resistance",
+      "formula": "(Close - nearest_support) / Close",
+      "meaning": "Normalized distance from price to the nearest support.",
+      "interpretation": "Small/near-zero = price is testing support right now (elevated bounce-or-break risk).",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "resistance_distance",
+      "group": "support_resistance",
+      "formula": "(nearest_resistance - Close) / Close",
+      "meaning": "Normalized distance from price to the nearest resistance.",
+      "interpretation": "Small/near-zero = price is testing resistance right now.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "swing_zone_width",
+      "group": "support_resistance",
+      "formula": "(dynamic_resistance - dynamic_support) / Close",
+      "meaning": "Width of the current support-resistance trading range, normalized by price.",
+      "interpretation": "Narrow = tight range (potential breakout setup); wide = range-bound with room to move.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "demand_zone",
+      "group": "support_resistance",
+      "formula": "swing_low followed by a strong up-move within the lookback window (see module docstring)",
+      "meaning": "Origin bar of a fresh institutional-style demand (buy-side) zone.",
+      "interpretation": "Price returning to this zone is expected to find buying interest.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "Heuristic, not a formally standardized indicator; forward-looking by construction (repaints).",
+      "when_to_use": ""
+    },
+    {
+      "name": "supply_zone",
+      "group": "support_resistance",
+      "formula": "swing_high followed by a strong down-move within the lookback window",
+      "meaning": "Origin bar of a fresh supply (sell-side) zone.",
+      "interpretation": "Price returning to this zone is expected to find selling interest.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "Heuristic; repaints (see demand_zone).",
+      "when_to_use": ""
+    },
+    {
+      "name": "demand_zone_strength",
+      "group": "support_resistance",
+      "formula": "Forward % move away from the demand zone origin",
+      "meaning": "How strong the reaction away from the zone was.",
+      "interpretation": "Larger = more significant zone.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "supply_zone_strength",
+      "group": "support_resistance",
+      "formula": "Forward % move away from the supply zone origin",
+      "meaning": "How strong the reaction away from the zone was.",
+      "interpretation": "Larger = more significant zone.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "zone_width",
+      "group": "support_resistance",
+      "formula": "High - Low of the zone origin bar",
+      "meaning": "Price band width of the zone.",
+      "interpretation": "Narrower zones are considered more precise reaction levels.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "demand_zone_age",
+      "group": "support_resistance",
+      "formula": "bars since the last demand_zone bar",
+      "meaning": "Recency of the most recent demand zone.",
+      "interpretation": "Smaller = more recently formed.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "supply_zone_age",
+      "group": "support_resistance",
+      "formula": "bars since the last supply_zone bar",
+      "meaning": "Recency of the most recent supply zone.",
+      "interpretation": "Smaller = more recently formed.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "fresh_demand_zone",
+      "group": "support_resistance",
+      "formula": "demand_zone_age <= 20",
+      "meaning": "Whether the nearest demand zone is still considered 'fresh' (untested).",
+      "interpretation": "Fresh zones are traditionally considered more reliable than repeatedly-tested ones.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "fresh_supply_zone",
+      "group": "support_resistance",
+      "formula": "supply_zone_age <= 20",
+      "meaning": "Whether the nearest supply zone is still considered 'fresh' (untested).",
+      "interpretation": "See fresh_demand_zone.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "nearest_demand_zone",
+      "group": "support_resistance",
+      "formula": "Low of the most recent demand_zone origin bar",
+      "meaning": "Price level of the nearest demand zone floor.",
+      "interpretation": "Reference level for support-style reactions.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "nearest_supply_zone",
+      "group": "support_resistance",
+      "formula": "High of the most recent supply_zone origin bar",
+      "meaning": "Price level of the nearest supply zone ceiling.",
+      "interpretation": "Reference level for resistance-style reactions.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "demand_zone_retested",
+      "group": "support_resistance",
+      "formula": "price re-enters the demand zone band after formation",
+      "meaning": "Whether today's bar dipped back into an existing demand zone.",
+      "interpretation": "A retest that holds strengthens the zone; a retest that fails (closes through) invalidates it.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "supply_zone_retested",
+      "group": "support_resistance",
+      "formula": "price re-enters the supply zone band after formation",
+      "meaning": "Whether today's bar pushed back into an existing supply zone.",
+      "interpretation": "See demand_zone_retested.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "fib_236",
+      "group": "fibonacci",
+      "formula": "dynamic_support + 0.236 * (dynamic_resistance - dynamic_support)",
+      "meaning": "23.6% Fibonacci retracement level of the current swing range.",
+      "interpretation": "A common area for a pullback within the prevailing trend to find support/resistance.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "Only as reliable as the underlying swing points (dynamic_support/dynamic_resistance), which repaint.",
+      "when_to_use": ""
+    },
+    {
+      "name": "fib_382",
+      "group": "fibonacci",
+      "formula": "dynamic_support + 0.382 * (dynamic_resistance - dynamic_support)",
+      "meaning": "38.2% Fibonacci retracement level of the current swing range.",
+      "interpretation": "A common area for a pullback within the prevailing trend to find support/resistance.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "Only as reliable as the underlying swing points (dynamic_support/dynamic_resistance), which repaint.",
+      "when_to_use": ""
+    },
+    {
+      "name": "fib_50",
+      "group": "fibonacci",
+      "formula": "dynamic_support + 0.5 * (dynamic_resistance - dynamic_support)",
+      "meaning": "50.0% Fibonacci retracement level of the current swing range.",
+      "interpretation": "A common area for a pullback within the prevailing trend to find support/resistance.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "Only as reliable as the underlying swing points (dynamic_support/dynamic_resistance), which repaint.",
+      "when_to_use": ""
+    },
+    {
+      "name": "fib_618",
+      "group": "fibonacci",
+      "formula": "dynamic_support + 0.618 * (dynamic_resistance - dynamic_support)",
+      "meaning": "61.8% Fibonacci retracement level of the current swing range.",
+      "interpretation": "A common area for a pullback within the prevailing trend to find support/resistance.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "Only as reliable as the underlying swing points (dynamic_support/dynamic_resistance), which repaint.",
+      "when_to_use": ""
+    },
+    {
+      "name": "fib_786",
+      "group": "fibonacci",
+      "formula": "dynamic_support + 0.786 * (dynamic_resistance - dynamic_support)",
+      "meaning": "78.6% Fibonacci retracement level of the current swing range.",
+      "interpretation": "A common area for a pullback within the prevailing trend to find support/resistance.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "Only as reliable as the underlying swing points (dynamic_support/dynamic_resistance), which repaint.",
+      "when_to_use": ""
+    },
+    {
+      "name": "fib_1272",
+      "group": "fibonacci",
+      "formula": "dynamic_support + 1.272 * (dynamic_resistance - dynamic_support)",
+      "meaning": "1.272 Fibonacci extension level beyond the current swing range.",
+      "interpretation": "A common projected target if the prevailing trend continues past the recent swing high.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "fib_1618",
+      "group": "fibonacci",
+      "formula": "dynamic_support + 1.618 * (dynamic_resistance - dynamic_support)",
+      "meaning": "1.618 Fibonacci extension level beyond the current swing range.",
+      "interpretation": "A common projected target if the prevailing trend continues past the recent swing high.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "fib_2618",
+      "group": "fibonacci",
+      "formula": "dynamic_support + 2.618 * (dynamic_resistance - dynamic_support)",
+      "meaning": "2.618 Fibonacci extension level beyond the current swing range.",
+      "interpretation": "A common projected target if the prevailing trend continues past the recent swing high.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "distance_from_fibonacci",
+      "group": "fibonacci",
+      "formula": "min(|Close - each fib level|) / Close",
+      "meaning": "Normalized distance from price to the nearest Fibonacci level.",
+      "interpretation": "Near zero = price is sitting right on a Fibonacci level.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "closest_fibonacci_level",
+      "group": "fibonacci",
+      "formula": "argmin(|Close - each fib level|)",
+      "meaning": "Name of the nearest Fibonacci level.",
+      "interpretation": "Categorical feature identifying which level price is currently reacting to.",
+      "priority": "Low",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "fibonacci_confluence",
+      "group": "fibonacci",
+      "formula": "any fib level within 1.5% of static_support/static_resistance",
+      "meaning": "A Fibonacci level lines up with an independent support/resistance level.",
+      "interpretation": "Confluence of multiple methods at the same price is traditionally considered a stronger level.",
+      "priority": "High",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "trend_score",
+      "group": "market_structure",
+      "formula": "OLS slope of Close over last 20 bars * window, in rolling-std units",
+      "meaning": "Normalized trend strength and direction.",
+      "interpretation": "Positive = uptrend, negative = downtrend; magnitude = conviction, comparable across tickers.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "A regression slope treats the window as linear \u2014 doesn't capture curvature/acceleration.",
+      "when_to_use": ""
+    },
+    {
+      "name": "trend_label",
+      "group": "market_structure",
+      "formula": "Uptrend if trend_score > 1, Downtrend if < -1, else Sideways",
+      "meaning": "Categorical trend regime.",
+      "interpretation": "Direct, human-readable trend classification.",
+      "priority": "High",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "is_uptrend",
+      "group": "market_structure",
+      "formula": "trend_label == 'Uptrend'",
+      "meaning": "Boolean uptrend flag.",
+      "interpretation": "One-hot-style flag for tree models.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "is_downtrend",
+      "group": "market_structure",
+      "formula": "trend_label == 'Downtrend'",
+      "meaning": "Boolean downtrend flag.",
+      "interpretation": "One-hot-style flag for tree models.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "is_sideways",
+      "group": "market_structure",
+      "formula": "trend_label == 'Sideways'",
+      "meaning": "Boolean sideways/range-bound flag.",
+      "interpretation": "One-hot-style flag for tree models.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "trend_reversal_signal",
+      "group": "market_structure",
+      "formula": "trend_label flips between Uptrend and Downtrend, or change_of_character is True",
+      "meaning": "A structural or regression-based trend change just occurred.",
+      "interpretation": "Early-warning flag; combine with volume confirmation before acting on it.",
+      "priority": "High",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "higher_high_count",
+      "group": "market_structure",
+      "formula": "count of Higher Highs among the last 4 confirmed swing highs",
+      "meaning": "How many of the recent swing highs were higher than the swing high before them.",
+      "interpretation": "Higher counts support an uptrend classification (Dow Theory).",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "lower_high_count",
+      "group": "market_structure",
+      "formula": "count of Lower Highs among the last 4 confirmed swing highs",
+      "meaning": "How many recent swing highs were lower than the one before them.",
+      "interpretation": "Higher counts support a downtrend classification.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "higher_low_count",
+      "group": "market_structure",
+      "formula": "count of Higher Lows among the last 4 confirmed swing lows",
+      "meaning": "How many recent swing lows were higher than the one before them.",
+      "interpretation": "Higher counts support an uptrend classification.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "lower_low_count",
+      "group": "market_structure",
+      "formula": "count of Lower Lows among the last 4 confirmed swing lows",
+      "meaning": "How many recent swing lows were lower than the one before them.",
+      "interpretation": "Higher counts support a downtrend classification.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "bullish_structure",
+      "group": "market_structure",
+      "formula": "most recent swing is both a Higher High and a Higher Low",
+      "meaning": "Textbook Dow Theory uptrend confirmation.",
+      "interpretation": "True = structure currently supports an uptrend read.",
+      "priority": "High",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "bearish_structure",
+      "group": "market_structure",
+      "formula": "most recent swing is both a Lower High and a Lower Low",
+      "meaning": "Textbook Dow Theory downtrend confirmation.",
+      "interpretation": "True = structure currently supports a downtrend read.",
+      "priority": "High",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "market_bias",
+      "group": "market_structure",
+      "formula": "Bullish if bullish_structure, Bearish if bearish_structure, else Neutral",
+      "meaning": "Categorical summary of current market structure.",
+      "interpretation": "Human-readable structure-based bias, independent of trend_label's regression approach.",
+      "priority": "High",
+      "recommended_for": [
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "market_structure",
+      "group": "market_structure",
+      "formula": "= market_bias",
+      "meaning": "Alias exposed under the spec's requested column name.",
+      "interpretation": "See market_bias.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "breakout_above_resistance",
+      "group": "breakout",
+      "formula": "Close(t) > static_resistance(t-1)",
+      "meaning": "Price closed above the prior rolling resistance level.",
+      "interpretation": "Potential start of a new upward move.",
+      "priority": "High",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "A single close above resistance is a weak signal alone \u2014 check volume_confirmation.",
+      "when_to_use": ""
+    },
+    {
+      "name": "breakdown_below_support",
+      "group": "breakout",
+      "formula": "Close(t) < static_support(t-1)",
+      "meaning": "Price closed below the prior rolling support level.",
+      "interpretation": "Potential start of a new downward move.",
+      "priority": "High",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "volume_confirmation",
+      "group": "breakout",
+      "formula": "volume_ratio >= 1.5",
+      "meaning": "Whether today's volume was elevated enough to trust a breakout.",
+      "interpretation": "True = the move had above-average participation.",
+      "priority": "High",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "fake_breakout",
+      "group": "breakout",
+      "formula": "breakout occurred but the very next close fell back inside the level",
+      "meaning": "A breakout that failed to hold.",
+      "interpretation": "Common trap for naive breakout strategies; finalizes one bar after the breakout bar.",
+      "priority": "High",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "Uses the next bar's close, so this label is only known one day later \u2014 not usable as a same-day live feature.",
+      "when_to_use": ""
+    },
+    {
+      "name": "breakout_label",
+      "group": "breakout",
+      "formula": "categorical combination of breakout direction + volume_confirmation + fake_breakout",
+      "meaning": "Human-readable summary of the day's breakout status.",
+      "interpretation": "One of: None, Confirmed/Unconfirmed Breakout Up, Confirmed/Unconfirmed Breakdown, Fake Breakout.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "support_bounce",
+      "group": "breakout",
+      "formula": "price within 1.5% of static_support and closed bullish, without breaking down",
+      "meaning": "Price tested support and reacted upward.",
+      "interpretation": "Supports a 'buy the dip' read at a known level.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "resistance_rejection",
+      "group": "breakout",
+      "formula": "price within 1.5% of static_resistance and closed bearish, without breaking out",
+      "meaning": "Price tested resistance and reacted downward.",
+      "interpretation": "Supports a 'fade the rally' read at a known level.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "demand_zone_bounce",
+      "group": "breakout",
+      "formula": "Low dipped into the nearest demand zone and the bar closed bullish",
+      "meaning": "Price reacted upward from a demand zone.",
+      "interpretation": "Zone-based analogue of support_bounce.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "supply_zone_rejection",
+      "group": "breakout",
+      "formula": "High pushed into the nearest supply zone and the bar closed bearish",
+      "meaning": "Price reacted downward from a supply zone.",
+      "interpretation": "Zone-based analogue of resistance_rejection.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Decision Engine",
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "target_1_day",
+      "group": "target",
+      "formula": "Close(t + 1)",
+      "meaning": "Raw future closing price 1 day(s) ahead.",
+      "interpretation": "Regression label; NaN for the last few rows where the future isn't known yet.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Time Series",
+        "Deep Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Direct regression target for price-level prediction models."
+    },
+    {
+      "name": "future_return_1_day",
+      "group": "target",
+      "formula": "(Close(t+1) - Close(t)) / Close(t)",
+      "meaning": "Percentage return over the next 1 day(s).",
+      "interpretation": "Scale-invariant regression label, comparable across tickers.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Deep Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Preferred regression target over raw price for cross-ticker models."
+    },
+    {
+      "name": "target_direction_1_day",
+      "group": "target",
+      "formula": "Close(t+1) > Close(t)",
+      "meaning": "Binary up/down direction over the next 1 day(s).",
+      "interpretation": "True = price rose; False = price fell or was flat.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Classification target for Buy/Hold/Sell-style signal models."
+    },
+    {
+      "name": "target_regression_1_day",
+      "group": "target",
+      "formula": "future_return_1_day",
+      "meaning": "Alias of future_return, named explicitly as the regression target per spec.",
+      "interpretation": "Identical values to future_return_*_day.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "target_3_day",
+      "group": "target",
+      "formula": "Close(t + 3)",
+      "meaning": "Raw future closing price 3 day(s) ahead.",
+      "interpretation": "Regression label; NaN for the last few rows where the future isn't known yet.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Time Series",
+        "Deep Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Direct regression target for price-level prediction models."
+    },
+    {
+      "name": "future_return_3_day",
+      "group": "target",
+      "formula": "(Close(t+3) - Close(t)) / Close(t)",
+      "meaning": "Percentage return over the next 3 day(s).",
+      "interpretation": "Scale-invariant regression label, comparable across tickers.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Deep Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Preferred regression target over raw price for cross-ticker models."
+    },
+    {
+      "name": "target_direction_3_day",
+      "group": "target",
+      "formula": "Close(t+3) > Close(t)",
+      "meaning": "Binary up/down direction over the next 3 day(s).",
+      "interpretation": "True = price rose; False = price fell or was flat.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Classification target for Buy/Hold/Sell-style signal models."
+    },
+    {
+      "name": "target_regression_3_day",
+      "group": "target",
+      "formula": "future_return_3_day",
+      "meaning": "Alias of future_return, named explicitly as the regression target per spec.",
+      "interpretation": "Identical values to future_return_*_day.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    },
+    {
+      "name": "target_5_day",
+      "group": "target",
+      "formula": "Close(t + 5)",
+      "meaning": "Raw future closing price 5 day(s) ahead.",
+      "interpretation": "Regression label; NaN for the last few rows where the future isn't known yet.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Time Series",
+        "Deep Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Direct regression target for price-level prediction models."
+    },
+    {
+      "name": "future_return_5_day",
+      "group": "target",
+      "formula": "(Close(t+5) - Close(t)) / Close(t)",
+      "meaning": "Percentage return over the next 5 day(s).",
+      "interpretation": "Scale-invariant regression label, comparable across tickers.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Deep Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Preferred regression target over raw price for cross-ticker models."
+    },
+    {
+      "name": "target_direction_5_day",
+      "group": "target",
+      "formula": "Close(t+5) > Close(t)",
+      "meaning": "Binary up/down direction over the next 5 day(s).",
+      "interpretation": "True = price rose; False = price fell or was flat.",
+      "priority": "High",
+      "recommended_for": [
+        "Machine Learning",
+        "Decision Engine"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": "Classification target for Buy/Hold/Sell-style signal models."
+    },
+    {
+      "name": "target_regression_5_day",
+      "group": "target",
+      "formula": "future_return_5_day",
+      "meaning": "Alias of future_return, named explicitly as the regression target per spec.",
+      "interpretation": "Identical values to future_return_*_day.",
+      "priority": "Medium",
+      "recommended_for": [
+        "Machine Learning"
+      ],
+      "advantages": "",
+      "limitations": "",
+      "when_to_use": ""
+    }
+  ]
+}
