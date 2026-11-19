@@ -185,24 +185,28 @@ npm.cmd --prefix frontend run dev
 
 Keep both terminals open, wait for Next.js to report that it is ready, and open [AURA-DS](http://127.0.0.1:3000/).
 
-### Windows launcher
+### Windows and VS Code launcher
 
-`Start-AURA.cmd` starts both services and keeps the frontend attached to its launcher window. The launcher uses `python.exe` from PATH. To use the virtual environment installed above, launch it from a terminal with that environment first on PATH:
+After installing dependencies, run this command from the project root in the VS Code terminal:
 
 ```powershell
-$env:Path = (Join-Path (Get-Location) '.venv\Scripts') + ';' + $env:Path
 .\Start-AURA.cmd
 ```
 
-If dependencies are already installed in the Python available on PATH, double-click `Start-AURA.cmd`. Keep its window open while using the application.
+Alternatively, choose **Terminal > Run Task > AURA-DS: Run workspace** in VS Code.
 
-The launcher uses an existing production build when `frontend/.next/BUILD_ID` exists. Otherwise it starts development mode. After changing frontend code, rebuild before using production mode:
+The launcher prefers `.venv/Scripts/python.exe`, checks Python dependencies, starts the API and Next.js development server, and waits for the page and proxied API to respond. Open the URL after the terminal prints **AURA-DS is ready**.
+
+Keep this terminal open while using the project. Press Ctrl+C to stop both services. Startup and service failures appear in the terminal, with logs under `output/workspace/`. Opening the browser URL requires the servers to be running.
+
+For a production build, run the following commands separately after stopping development mode:
 
 ```powershell
 npm.cmd --prefix frontend run build
+npm.cmd --prefix frontend run start
 ```
 
-Run development and production build commands at separate times to avoid competing writes to generated files.
+Start the backend separately as described above when using production mode.
 
 ## How to use the project
 
@@ -300,7 +304,7 @@ Run the browser workflow with Microsoft Edge installed:
 node frontend/tests/workspace.mjs
 ```
 
-The browser test starts temporary services on ports 3031 and 8031, uses temporary storage, and disables Gemini. Run it with the Python dependencies available on PATH, or prepend the virtual environment to PATH as shown in the launcher instructions.
+The browser test starts temporary services on ports 3031 and 8031, uses temporary storage, and disables Gemini. Run it with Python dependencies available on PATH. For the project environment, prepend its Scripts directory using $env:Path = (Join-Path (Get-Location) '.venv/Scripts') + ';' + $env:Path before running the browser test.
 
 Previous workspace verification covered two API integration tests, a production frontend build, and a browser workflow from upload through reporting and history reopening. Responsive Overview checks covered widths of 1440, 1280, 1024, 768, and 375 pixels. Live Gemini generation and retrieval were not verified in those tests.
 
@@ -310,9 +314,9 @@ Previous workspace verification covered two API integration tests, a production 
 |---|---|
 | `ERR_CONNECTION_REFUSED` at port 3000 | Start the frontend and wait for Ready. Keep its terminal or launcher window open. |
 | Interface opens but API requests fail | Start the API on port 8000 and inspect its terminal output or `output/workspace/api.stderr.log` when using the launcher. |
-| Launcher reports missing Python modules | Use the Python environment where dependencies were installed. The launcher resolves `python.exe` through PATH. |
+| Launcher reports missing Python modules | Install requirements into `.venv`. The launcher prefers its Python interpreter and otherwise uses PATH. |
 | Launcher reports a busy port | Check the existing server window. Reuse it or close that server before starting another instance. |
-| UI still shows an older version | Rebuild the frontend if the launcher is using an existing production build. |
+| UI still shows an older version | The launcher uses development mode. For a separately started production server, stop it and rebuild before restarting. |
 | Report says explanation unavailable | Check Google credentials, network connectivity, the configured model, reference documents, and backend logs. |
 | Analysis validation rejects a target | Check class count, missing target values, samples per class, and the selected split. |
 | A run is failed after an API restart | Interrupted queued or running jobs are marked failed. Start a new analysis. |
